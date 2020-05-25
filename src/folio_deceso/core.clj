@@ -187,7 +187,7 @@
   (def cy2016c (edn/read-string (slurp "resources/cy2016.edn"))))
 
 
-;; for good meassure
+;; for good measure
 (defn expand-count
   [m]
   (let [fwd (range (+ (:count m) 1)
