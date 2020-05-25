@@ -152,6 +152,12 @@
               *out* w]
       (pr cy2020)))
 
+  (def cy2019 (counts-year "2019" rj-2019))
+  (with-open [w (clojure.java.io/writer "resources/cy2019.edn")]
+    (binding [*print-length* false
+              *out* w]
+      (pr cy2019)))
+
 
   (def cy2018 (counts-year "2018" rj-2018))
   (with-open [w (clojure.java.io/writer "cy2018.edn")]
@@ -175,10 +181,22 @@
       (pr cy2016)))
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
+  (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
   (def cy2018c (edn/read-string (slurp "resources/cy2018.edn")))
   (def cy2017c (edn/read-string (slurp "resources/cy2017.edn")))
   (def cy2016c (edn/read-string (slurp "resources/cy2016.edn"))))
 
+
+;; for good meassure
+(defn expand-count
+  [m]
+  (let [fwd (range (+ (:count m) 1)
+                   (+ (:count m) 6))]
+    (filter :found
+            (map #(locate-acta "2018" (:juzgado m) %)
+                 fwd))))
+
+#_(map expand-count cy2018c)
 
 ;;;;;;;; samples
 (comment
@@ -284,6 +302,8 @@
   (write-csv-monthly "resources/months2019.csv" cm2019c)
   (def cm2020c (apply concat (edn/read-string (slurp "resources/cm2020.edn"))))
   (write-csv-monthly "resources/months2020.csv" cm2020c)
+
+  
 
   (def months2019
     (map (fn [[k v]] {:predicted false
