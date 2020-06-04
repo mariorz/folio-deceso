@@ -1,8 +1,12 @@
 (ns folio-deceso.core
   (:require [oz.core :as oz]
+            [semantic-csv.core :as sc]
             [clj-http.client :as http]
             [clojure.java.io :as io]
             [clojure.edn :as edn]
+            [clj-time.core :as t]
+            [clj-time.format :as f]
+            [clj-time.local :as l]
             [clojure.data.csv :as csv]
             [folio-deceso.viz :as viz]))
 
@@ -74,7 +78,6 @@
     (binding [*print-length* false
               *out* w]
       (pr relevant-juzgados-2017)))
-
 
 
   (def rj (edn/read-string (slurp "resources/rj.edn")))
@@ -303,7 +306,7 @@
   (def cm2020c (apply concat (edn/read-string (slurp "resources/cm2020.edn"))))
   (write-csv-monthly "resources/months2020.csv" cm2020c)
 
-  
+
 
   (def months2019
     (map (fn [[k v]] {:predicted false
@@ -368,7 +371,7 @@
 
 
   (def month-numbers-2020
-    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020" 5 "May/20/2020"})
+    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020" 4.5 "May/20/2020" 5 "May/31/2020"})
 
 
 
@@ -384,15 +387,8 @@
                :count 0, :date "Jan/1/2020" :predicted false}
               {:year "2020", :month 0,
                :count 0, :date "Jan/1/2020" :predicted false}
-              {:year "2020" :month 5 :count (:count (last  months2020))
-               :predicted true :date "May/20/2020"}
-              {:year "2020", :month 5,
-               :count (+ (:count (last (butlast months2020)))
-                         (* (/ (- (:count (last months2020))
-                                  (:count (last (butlast months2020))))
-                               20.0)
-                            30.0)),
-               :date "May/31/2020" :predicted true}])))
+              {:year "2020" :month 4.5 :count 39142 ;; TODO check this number
+               :predicted true :date "May/20/2020"}])))
 
 
   ;;; Chart 1 (time series)
@@ -433,39 +429,18 @@
                            (filter #(<= (:month %) 5) months2019))))
      (reduce only-diff []
              (sort-by :month
-                      (filter #(not= (:date %) "May/20/2020")
-                              (concat
-                               (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
-                                    months2020)
-                               [(into (last months2020)
-                                      {:predicted true :date (get month-numbers-2020 5)})
-                                {:year "2020", :month 5,
-                                 :count (+ (:count (last (butlast months2020)))
-                                           (* (/ (- (:count (last months2020))
-                                                    (:count (last (butlast months2020))))
-                                                 20.0)
-                                              30.0)),
-                                 :date "May/31/2020"
-                                 :predicted true}]))))))
+                      (filter #(not= (:date %) "May/20/20202")
+                              (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
+                                   months2020))))))
 
   (def month-items-bars-avg
     (concat
      (reduce only-diff [] avg2016-2019)
      (reduce only-diff []
              (sort-by :month
-                      (filter #(not= (:date %) "May/20/2020")
-                              (concat
-                               (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
-                                    months2020)
-                               [(into (last months2020)
-                                      {:predicted true :date (get month-numbers-2020 5)})
-                                {:year "2020", :month 5,
-                                 :count (+ (:count (last (butlast months2020)))
-                                           (* (/ (- (:count (last months2020))
-                                                    (:count (last (butlast months2020))))
-                                                 20.0)
-                                              30.0)),
-                                 :date "May/31/2020" :predicted true}]))))))
+                      (filter #(not= (:date %) "May/20/20202")
+                              (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
+                                   months2020))))))
 
   ;; unpublished chart
   (oz/view! (viz/grouped-bar-chart-avg (filter #(not= (:date %) "May/20/2020")
@@ -485,6 +460,7 @@
      2 "Febrero"
      3 "Marzo"
      4 "Abril"
+     4.5 "Mayo"
      5 "Mayo"})
 
   (def month-items-bars-diff
@@ -498,12 +474,12 @@
                            :year "2020"
                            :diff (- (:count (second v))
                                     (:count (first v)))
-                           :diff-p (* 100.0 (- (/ (:count (second v))
-                                                  (:count (first v)))
-                                               1))
+                           :diff-p  (* 1.0 (- (/ (:count (second v))
+                                                 (:count (first v)))
+                                              1))
                            :predicted false}))))
 
-  ;; Chart 2 net difference per month (with prediction)
+  ;; Chart 2 net difference per month (without prediction)
   (oz/view!
    (viz/grouped-bar-chart-diff month-items-bars-diff :month-spanish :diff :year))
 
@@ -527,20 +503,109 @@
               :predicted false, :count (+ (/ (* 20.0 6135) 30) 27011)}]))
 
 
+  (def avg2016-2019-full
+    (concat [{:month 0, :date "Jan/1/2020", :year "Promedio 2016-2019",
+              :predicted false, :count 0}]
+            avg2016-2019))
+
+
+
+
   ;; values for confirmados and sospechosos
-  ;; from db published at May 22
-  ;; with fecha_def of May 20
+  ;; from db published at june 3
+  ;; with fecha_def at or before May 31
   (def total-items
     [{:count (- (:count (last months2020))
-                (:count (last avg2016-2019-cropped)))
+                (:count (last avg2016-2019-full)))
       :cat "Exceso de Mortalidad"}
-     {:count 1754 :cat "Confirmados"}
-     {:count (+ 1832 220) :cat "Confirmados+Sospechosos"}])
+     {:count 3174 :cat "Confirmados"}
+     {:count (+ 3174 265) :cat "Confirmados+Sospechosos"}])
 
   ;; Chart 4, total excess mortality
-  (oz/view! (viz/chart4-bar-chart total-items :cat :count)))
+  (oz/view! (viz/chart4-bar-chart total-items :cat :count))
+
+  (defn parse-int [s]
+    (Integer/parseInt (re-find #"\A-?\d+" s)))
+
+
+  (defn parse-mx-date
+    [s]
+    (f/parse (f/formatter "dd/MM/yy") s))
+
+  (defn format-utcdates
+    [s]
+    (f/unparse (f/formatter "MMMM/dd/yyyy") (parse-mx-date s)))
+
+
+  (def soft-chart-data
+    (with-open [in-file (io/reader "softchart.csv")]
+      (->>
+       (csv/read-csv in-file)
+       (sc/remove-comments)
+       (sc/mappify)
+       (sc/cast-with {:xssmortality parse-int
+                      :confirmed parse-int
+                      :suspects parse-int
+                      :cases parse-int
+                      :day parse-int
+                      :date format-utcdates})
+       (map (fn [x] [{:date (:date x)
+                      :count (:cases x)
+                      :type "Confirmados+Sospechosos"}
+                     {:date (:date x)
+                      :count (:xssmortality x)
+                      :type "Exceso de Mortalidad"}]))
+       (apply concat)
+       (drop 110)
+       doall)))
+
+  (defn accum
+    [all-prev current-val]
+    (if (= (count all-prev) 0)
+      [current-val]
+      (conj all-prev
+            (into current-val
+                  {:diff (+ (:diff current-val)
+                            (:diff (last all-prev)))}))))
+
+
+  (def accumulated-points-rc
+    (concat [{:year "2020" :month 4.5 :diff 8072 ;; May 20 number from first article
+              :type "xssmortality-points" :date "May/20/2020"}]
+            (drop 1 (map (fn [r] {:date (:date r) :diff (:diff r) :type "xssmortality-points"})
+                         (reduce accum []
+                                 (filter #(= (:year %) "2020") month-items-bars-diff))))))
+
+  ;; chart 5 unpublished
+  (oz/view! (viz/chart5-line-plot (concat
+                                   accumulated-points-rc
+                                   soft-chart-data) :date :count :type))
+
+  ;; us state data from
+  ;; https://www.washingtonpost.com/graphics/2020/investigations/coronavirus-excess-deaths-may/
+  (def table-data
+    [{:place "Indiana" :deaths 14386 :xssdeaths 1730 :covid-deaths 1482}
+     {:place "Nuevo Hampshire" :deaths 2590 :xssdeaths 168 :covid-deaths 132}
+     {:place "Nueva York (Cuidad)" :deaths 33897 :xssdeaths 23615 :covid-deaths 17135}
+     {:place "Utah" :deaths 3922 :xssdeaths 102 :covid-deaths 73}
+     {:place "Florida" :deaths 44306 :xssdeaths 2750 :covid-deaths 1838}
+     {:place "Oregon" :deaths 7209 :xssdeaths 247 :covid-deaths 159}
+     {:place "California" :deaths 56590 :xssdeaths 4753 :covid-deaths 2771}
+     {:place "Texas" :deaths 40978 :xssdeaths 2870 :covid-deaths 1129}
+     {:place "Carolina del Sur" :deaths 10514 :xssdeaths 1087 :covid-deaths 326}
+     {:place "CDMX"
+      :deaths (:count (last months2020))
+      :xssdeaths (:diff (last accumulated-points-rc))
+      :covid-deaths (:count (last total-items))}])
+
+  (oz/view! (viz/single-bar-percent {:proportion "75"
+                                     :place "CDMX"}))
+
+  ;; table 1
+  (oz/view! (viz/covid-xss-table table-data)))
+
 
 
 (defn -main
   [& args]
-  (println "Hello, World!"))
+  (oz/start-server! 8888))

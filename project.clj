@@ -7,7 +7,8 @@
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/data.csv "0.1.4"]
                  [nrepl "0.7.0-beta1"]
-                 [metasoarous/oz "1.6.0-alpha6"]]
+                 [metasoarous/oz "1.6.0-alpha6"]
+                 [semantic-csv "0.2.1-alpha1"]]
   :plugins [[cider/cider-nrepl "0.24.0"]]
   :middleware [cider-nrepl.plugin/middleware]
   :main ^:skip-aot folio-deceso.core
