@@ -387,7 +387,7 @@
                :count 0, :date "Jan/1/2020" :predicted false}
               {:year "2020", :month 0,
                :count 0, :date "Jan/1/2020" :predicted false}
-              {:year "2020" :month 4.5 :count 39142 ;; TODO check this number
+              {:year "2020" :month 4.5 :count (+ 39142 1938) ;; may 20 article+ juzgado 0
                :predicted true :date "May/20/2020"}])))
 
 
@@ -512,14 +512,14 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published at june 3
+  ;; from db published at june 4
   ;; with fecha_def at or before May 31
   (def total-items
     [{:count (- (:count (last months2020))
                 (:count (last avg2016-2019-full)))
       :cat "Exceso de Mortalidad"}
-     {:count 3174 :cat "Confirmados"}
-     {:count (+ 3174 265) :cat "Confirmados+Sospechosos"}])
+     {:count 3338 :cat "Confirmados"}
+     {:count (+ 3338 287) :cat "Confirmados+Sospechosos"}])
 
   ;; Chart 4, total excess mortality
   (oz/view! (viz/chart4-bar-chart total-items :cat :count))
