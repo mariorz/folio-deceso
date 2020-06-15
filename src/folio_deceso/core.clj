@@ -11,233 +11,41 @@
             [folio-deceso.viz :as viz]))
 
 
-(defn locate-acta
-  [year juzgado acta]
-  (let [map-url "http://www.rcivil.cdmx.gob.mx/solicitudactas/busqueda/resultados"
-        headers {:form-params
-                 {:clase_acta "DEFUNCION"
-                  :anio year
-                  :juzgado juzgado
-                  :libro ""
-                  :nu_acta acta}}
-        _ (println "locating acta:" acta "in juzgado:" juzgado)
-        data (http/post map-url headers)
-        reason-msg (:reason-phrase data)
-        date-regex #"\d{1,2}/\d{1,2}/\d{4}"
-        date (clojure.core/re-find date-regex (:body data))
-        found (= reason-msg "OK")]
-    #_data
-    (Thread/sleep 3000)
-    {:year year
-     :date_def date
-     :juzgado juzgado
-     :acta acta
-     :found found}))
 
-(comment
-  (def relevant-juzgados
-    (filter #(:found %)
-            (map #(locate-acta "2020" (str %) "1") (range 1 52))))
+(defn parse-int
+  [s]
+  (try
+    (Integer/parseInt (re-find #"\A-?\d+" s))
+    (catch Exception e (str "error:" s))))
 
 
-  (def relevant-juzgados-2019
-    (filter #(:found %)
-            (map #(locate-acta "2019" (str %) "1") (range 1 52))))
+(defn parse-mx-date
+  [s]
+  (f/parse (f/formatter "dd/MM/yy") s))
+
+(defn format-utcdates
+  [s]
+  (f/unparse (f/formatter "MMMM/dd/yyyy") (parse-mx-date s)))
 
 
-  (def relevant-juzgados-2018
-    (filter #(:found %)
-            (map #(locate-acta "2018" (str %) "1") (range 1 52))))
+(defn parse-us-date
+  [s]
+  (f/parse (f/formatter "MM/dd/yyyy") s))
 
+(defn mxts-format
+  [s]
+  (f/unparse (f/formatter "dd-MM-yyyy") (parse-us-date s)))
 
-  (def relevant-juzgados-2017
-    (filter #(:found %)
-            (map #(locate-acta "2017" (str %) "1") (range 1 52))))
-
-  (def relevant-juzgados-2016
-    (filter #(:found %)
-            (map #(locate-acta "2016" (str %) "1") (range 1 52))))
-
-
-  (with-open [w (clojure.java.io/writer "rj.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr relevant-juzgados)))
-
-  (with-open [w (clojure.java.io/writer "resources/rj2019.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr relevant-juzgados-2019)))
-
-  (with-open [w (clojure.java.io/writer "resources/rj2018.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr relevant-juzgados-2018)))
-
-  (with-open [w (clojure.java.io/writer "resources/rj2017.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr relevant-juzgados-2017)))
-
-
-  (def rj (edn/read-string (slurp "resources/rj.edn")))
-  (def rj-2018 (edn/read-string (slurp "resources/rj2018.edn")))
-  (def rj-2019 (edn/read-string (slurp "resources/rj2019.edn"))))
-
-
-(defn last-acta
-  ([year juzgado end]
-   (last-acta year juzgado 0 end))
-  ([year juzgado start end]
-   (println "start:" start "end:" end)
-   (if (= start (- end 1))
-     start
-     (let [half (int (/ (+ start end) 2))
-           c (locate-acta year juzgado half)]
-       (if (:found c)
-         (recur year juzgado half end)
-         (recur year juzgado start half))))))
-
-
-(defn last-acta-for-month
-  ([year month juzgado end]
-   (last-acta-for-month year month juzgado 0 end))
-  ([year month juzgado start end]
-   (println "start:" start "end:" end "month:" month)
-   (if (= start (- end 1))
-     start
-     (let [half (int (/ (+ start end) 2))
-           c (locate-acta year juzgado half)]
-       (if (and (:found c)
-                (= (count (:date_def c)) 10)
-                (<= (Integer. (re-find  #"\d+" (subs (:date_def c) 3 5))) month))
-         (recur year month juzgado half end)
-         (recur year month juzgado start half))))))
-
-
-(defn counts-monthly
-  [year rj]
-  (map (fn [j] (map (fn [m] {:juzgado (:juzgado j)
-                             :month m
-                             :count (last-acta-for-month
-                                     year m (:juzgado j) 20000)})
-                    (range 1 12)))
-       (filter :found rj)))
 
 
 (comment
-  (def cm2020 (counts-monthly "2020" rj))
-  (def cm2019 (counts-monthly "2019" rj-2019))
-
-  (with-open [w (clojure.java.io/writer "resources/cm2020.edn")]
-      (binding [*print-length* false
-                *out* w]
-        (pr cm2020)))
-
-  (with-open [w (clojure.java.io/writer "resources/cm2019.edn")]
-      (binding [*print-length* false
-                *out* w]
-        (pr cm2019))))
-
-
-(defn counts-year
-  [year rj]
-  (map (fn [j] {:juzgado (:juzgado j)
-                :count (last-acta year (:juzgado j) 50000)})
-       (filter #(:found %) rj)))
-
-
-(comment
-  (def cy2020 (counts-year "2020" rj))
-
-  (with-open [w (clojure.java.io/writer "resources/cy2020.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr cy2020)))
-
-  (def cy2019 (counts-year "2019" rj-2019))
-  (with-open [w (clojure.java.io/writer "resources/cy2019.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr cy2019)))
-
-
-  (def cy2018 (counts-year "2018" rj-2018))
-  (with-open [w (clojure.java.io/writer "cy2018.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr cy2018)))
-
-  (def cy2017 (counts-year "2017" relevant-juzgados-2017))
-
-  (with-open [w (clojure.java.io/writer "resources/cy2017.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr cy2017)))
-
-
-  (def cy2016 (counts-year "2016" relevant-juzgados-2016))
-
-  (with-open [w (clojure.java.io/writer "resources/cy2016.edn")]
-    (binding [*print-length* false
-              *out* w]
-      (pr cy2016)))
+  (oz/start-server! 8888)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
   (def cy2018c (edn/read-string (slurp "resources/cy2018.edn")))
   (def cy2017c (edn/read-string (slurp "resources/cy2017.edn")))
   (def cy2016c (edn/read-string (slurp "resources/cy2016.edn"))))
-
-
-;; for good measure
-(defn expand-count
-  [m]
-  (let [fwd (range (+ (:count m) 1)
-                   (+ (:count m) 6))]
-    (filter :found
-            (map #(locate-acta "2018" (:juzgado m) %)
-                 fwd))))
-
-#_(map expand-count cy2018c)
-
-;;;;;;;; samples
-(comment
-  ;; sample sizes for 95% CI, 2.5% Error
-  ;; given count found for each juzgado
-  (def sample-2020-14
-    (let [limit (:count (first (filter #(= (:juzgado %) "14") cy2020)))]
-      (take 375 (repeatedly #(rand-int limit)))))
-
-  (def sample-2020-51
-    (let [limit (:count (first (filter #(= (:juzgado %) "51") cy2020)))]
-      (take 369 (repeatedly #(rand-int limit)))))
-
-  (def sample-2020-18
-    (let [limit (:count (first (filter #(= (:juzgado %) "18") cy2020)))]
-      (take 367 (repeatedly #(rand-int limit)))))
-
-
-  (def sample-result-14
-    (map #(locate-acta "2020" "14" (str %)) sample-2020-15))
-
-  (def sample-result-51
-    (map #(locate-acta "2020" "51" (str %)) sample-2020-51))
-
-  (def sample-result-18
-    (map #(locate-acta "2020" "18" (str %)) sample-2020-18)))
-
-
-(defn make-sample-map
-  [r]
-  {:year (nth r 0)
-   :found (not (= "" (nth r 1)))
-   :date_def (if (= "" (nth r 1))
-               nil
-               (nth r 1))
-   :juzgado (nth r 2)
-   :acta (nth r 3)})
-
 
 (comment
   (def saved-sample-14
@@ -302,10 +110,9 @@
 
 (comment
   (def cm2019c (apply concat (edn/read-string (slurp "resources/cm2019.edn"))))
-  (write-csv-monthly "resources/months2019.csv" cm2019c)
+  ;;(write-csv-monthly "resources/months2019.csv" cm2019c)
   (def cm2020c (apply concat (edn/read-string (slurp "resources/cm2020.edn"))))
-  (write-csv-monthly "resources/months2020.csv" cm2020c)
-
+  ;;(write-csv-monthly "resources/months2020.csv" cm2020c)
 
 
   (def months2019
@@ -324,285 +131,287 @@
   ;; this is so that we can use a vega-lite temporal axis on
   ;; Chart 1, with the different series for each year aligned.
 
-  ;;7,944
-  ;;7,944+6,764=> 14,708
-  ;;7,944+6,764+6,319=> 21,027
-  ;;7,944+6,764+6,319+5,895=> 26,922
-  ;;7,944+6,764+6,319+5,895+6,138=> 33,060
-  (def imss2018
-    [{:year "2018", :month 0, :count 0, :date "Jan/1/2020" :predicted false}
-     {:year "2018", :month 1, :count 7944, :date "Jan/31/2020" :predicted false}
-     {:year "2018", :month 2, :count 14708, :date "Feb/28/2020" :predicted false}
-     {:year "2018", :month 3, :count 21027, :date "Mar/31/2020" :predicted false}
-     {:year "2018", :month 4, :count 26922, :date "Apr/30/2020" :predicted false}
-     {:year "2018", :month 5, :count 33060, :date "May/31/2020" :predicted false}])
-
-
-  ;;6,779
-  ;;6,779+6,462=> 13,241
-  ;;6,779+6,462+7,115=> 20,356
-  ;;6,779+6,462+7,115+6,204=> 26,560
-  ;;6,779+6,462+7,115+6,204+6,148=> 32,708
-  (def imss2017
-    [{:year "2017", :month 0, :count 0, :date "Jan/1/2020" :predicted false}
-     {:year "2017", :month 1, :count 6779, :date "Jan/31/2020" :predicted false}
-     {:year "2017", :month 2, :count 13241, :date "Feb/28/2020" :predicted false}
-     {:year "2017", :month 3, :count 20356, :date "Mar/31/2020" :predicted false}
-     {:year "2017", :month 4, :count 26560, :date "Apr/30/2020" :predicted false}
-     {:year "2017", :month 5, :count 32708, :date "May/31/2020" :predicted false}])
-
-
-  ;; 7,115
-  ;; 7,115+7,284=>14,399
-  ;; 7,115+7,284+6,793=> 21,192
-  ;; 7,115+7,284+6,793+5,902=> 27,094
-  ;; 7,115+7,284+6,793+5,902+5,860=> 32,954
-  (def imss2016
-    [{:year "2016", :month 0, :count 0, :date "Jan/1/2020" :predicted false}
-     {:year "2016", :month 1, :count 7115, :date "Jan/31/2020" :predicted false}
-     {:year "2016", :month 2, :count 14399, :date "Feb/28/2020" :predicted false}
-     {:year "2016", :month 3, :count 21192, :date "Mar/31/2020" :predicted false}
-     {:year "2016", :month 4, :count 27094, :date "Apr/30/2020" :predicted false}
-     {:year "2016", :month 5, :count 32954, :date "May/31/2020" :predicted false}])
-
-
   (def month-numbers-2019
-    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020" 5 "May/31/2020"})
+    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020"
+     5 "May/31/2020" 6 "June/30/2020" 7 "July/31/2020" 8 "Aug/31/2020"
+     9 "Sep/30/2020" 10 "Oct/31/2020" 11 "Nov/30/2020" 12 "Dec/31/2020"})
 
 
   (def month-numbers-2020
-    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020" 4.5 "May/20/2020" 5 "May/31/2020"})
+    {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020"
+     4.5 "May/20/2020" 5 "May/31/2020" 6 "June/30/2020"})
 
 
-
-  (def month-items
-    (concat
-     imss2016
-     imss2017
-     imss2018
-     (map (fn [x] (into x {:date (get month-numbers-2019 (:month x))}))
-          (filter #(<= (:month %) 5) months2019))
-     (concat (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))})) months2020)
-             [{:year "2019", :month 0,
-               :count 0, :date "Jan/1/2020" :predicted false}
-              {:year "2020", :month 0,
-               :count 0, :date "Jan/1/2020" :predicted false}
-              {:year "2020" :month 4.5 :count (+ 39142 1938) ;; may 20 article+ juzgado 0
-               :predicted true :date "May/20/2020"}])))
-
-
-  ;;; Chart 1 (time series)
-  (oz/view! (viz/chart1-line-plot month-items :date :count :year)))
-
-
-(comment
-
-  (def avg2016-2019
-    (->> month-items
-         (filter #(not= (:year %) "2020"))
-         (group-by :month)
-         (map (fn [[k v]] (into {:month (:month (first v))
-                                 :date (:date (first v))
-                                 :year "Promedio 2016-2019"
-                                 :predicted false
-                                 :count (int (* 1.0 (/ (apply + (map :count v))
-                                                       (count v))))})))))
-
-  (defn only-diff
-    [all-prev current-val]
-    (if (= (count all-prev) 0)
-      [current-val]
-      (conj all-prev
-            (into current-val
-                  {:count (- (:count current-val)
-                             (apply + (map :count  all-prev)))}))))
-
-
-  (def month-items-bars
-    (concat
-     (reduce only-diff [] imss2016)
-     (reduce only-diff [] imss2017)
-     (reduce only-diff [] imss2018)
-     (reduce only-diff []
-             (sort-by :month
-                      (map (fn [x] (into x {:date (get month-numbers-2019 (:month x))}))
-                           (filter #(<= (:month %) 5) months2019))))
-     (reduce only-diff []
-             (sort-by :month
-                      (filter #(not= (:date %) "May/20/20202")
-                              (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
-                                   months2020))))))
-
-  (def month-items-bars-avg
-    (concat
-     (reduce only-diff [] avg2016-2019)
-     (reduce only-diff []
-             (sort-by :month
-                      (filter #(not= (:date %) "May/20/20202")
-                              (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
-                                   months2020))))))
-
-  ;; unpublished chart
-  (oz/view! (viz/grouped-bar-chart-avg (filter #(not= (:date %) "May/20/2020")
-                                               month-items-bars-avg)
-                                       :date :count :year))
-
-  ;; unpublished net deaths per months by years
-  (oz/view! (viz/grouped-bar-chart (filter #(and (not= (:date %) "May/20/2020")
-                                                 (not= (:date %) "Jan/1/2020"))
-                                           month-items-bars)
-                                   :date :count :year)))
-
-
-(comment
-  (def months-spanish
-    {1 "Enero"
-     2 "Febrero"
-     3 "Marzo"
-     4 "Abril"
-     4.5 "Mayo"
-     5 "Mayo"})
-
-  (def month-items-bars-diff
-    (->> month-items-bars-avg
-         (filter #(not= (:month %) 0))
-         (group-by :month)
-         (map (fn [[k v]] {:month (:month (first v))
-                           :month-spanish (get months-spanish
-                                               (:month (first v)))
-                           :date (:date (first v))
-                           :year "2020"
-                           :diff (- (:count (second v))
-                                    (:count (first v)))
-                           :diff-p  (* 1.0 (- (/ (:count (second v))
-                                                 (:count (first v)))
-                                              1))
-                           :predicted false}))))
-
-  ;; Chart 2 net difference per month (without prediction)
-  (oz/view!
-   (viz/grouped-bar-chart-diff month-items-bars-diff :month-spanish :diff :year))
-
-
-  ;; Chart 3 percentage diff per month (with prediction)
-  (oz/view!
-   (viz/grouped-bar-chart-diff-p month-items-bars-diff :month-spanish :diff-p :year)))
-
-
-(comment
-
-  ;; last two points from avg2016-2019:
-  ;; (- 33146 27011)
-  ;; (+ (/ (* 20.0 6135) 30) 27011)
-  ;; we "crop" may's average to the first 20 day only.
-  (def avg2016-2019-cropped
-    (concat [{:month 0, :date "Jan/1/2020", :year "Promedio 2016-2019",
-              :predicted false, :count 0}]
-            (take 4 avg2016-2019)
-            [{:month 5, :date "May/20/2020", :year "Promedio 2016-2019",
-              :predicted false, :count (+ (/ (* 20.0 6135) 30) 27011)}]))
-
-
-  (def avg2016-2019-full
-    (concat [{:month 0, :date "Jan/1/2020", :year "Promedio 2016-2019",
-              :predicted false, :count 0}]
-            avg2016-2019))
-
-
-
-
-  ;; values for confirmados and sospechosos
-  ;; from db published at june 4
-  ;; with fecha_def at or before May 31
-  (def total-items
-    [{:count (- (:count (last months2020))
-                (:count (last avg2016-2019-full)))
-      :cat "Exceso de Mortalidad"}
-     {:count 3338 :cat "Confirmados"}
-     {:count (+ 3338 287) :cat "Confirmados+Sospechosos"}])
-
-  ;; Chart 4, total excess mortality
-  (oz/view! (viz/chart4-bar-chart total-items :cat :count))
-
-  (defn parse-int [s]
-    (Integer/parseInt (re-find #"\A-?\d+" s)))
-
-
-  (defn parse-mx-date
+  (defn homogenize-year
     [s]
-    (f/parse (f/formatter "dd/MM/yy") s))
+    (f/unparse (f/formatter "MM/dd/2020") (f/parse (f/formatter "dd/MM/yyyy") s)))
 
-  (defn format-utcdates
-    [s]
-    (f/unparse (f/formatter "MMMM/dd/yyyy") (parse-mx-date s)))
-
-
-  (def soft-chart-data
-    (with-open [in-file (io/reader "softchart.csv")]
+  (def inegi-days
+    (with-open [in-file (io/reader "resources/inegi-days.csv")]
       (->>
        (csv/read-csv in-file)
        (sc/remove-comments)
        (sc/mappify)
-       (sc/cast-with {:xssmortality parse-int
-                      :confirmed parse-int
-                      :suspects parse-int
-                      :cases parse-int
-                      :day parse-int
-                      :date format-utcdates})
-       (map (fn [x] [{:date (:date x)
-                      :count (:cases x)
-                      :type "Confirmados+Sospechosos"}
-                     {:date (:date x)
-                      :count (:xssmortality x)
-                      :type "Exceso de Mortalidad"}]))
-       (apply concat)
-       (drop 110)
+       (sc/cast-with {:year identity
+                      :week parse-int
+                      :accum parse-int
+                      :accum-week parse-int
+                      :new parse-int
+                      :last-doy parse-int
+                      :date homogenize-year})
+       (map #(into % {:predicted false :count (:accum %)}))
        doall)))
 
-  (defn accum
-    [all-prev current-val]
-    (if (= (count all-prev) 0)
-      [current-val]
-      (conj all-prev
-            (into current-val
-                  {:diff (+ (:diff current-val)
-                            (:diff (last all-prev)))}))))
+
+  (def inegi2016
+    (concat
+     (drop-last 1 (filter #(and (= (:year %) "2016") (= (:last-doy %) 1)) inegi-days))
+     [(last (drop-last 1 (filter #(= (:year %) "2016") inegi-days)))]))
+
+  (def inegi2017
+    (filter #(and (= (:year %) "2017") (= (:last-doy %) 1)) inegi-days))
+
+  (def inegi2018
+    (concat
+     (drop-last 1 (filter #(and (= (:year %) "2018") (= (:last-doy %) 1)) inegi-days))
+     [(last (filter #(= (:year %) "2018") inegi-days))]))
+
+  (def weeks
+    (with-open [in-file (io/reader "resources/weeks.csv")]
+      (->> (csv/read-csv in-file)
+           (sc/remove-comments)
+           (sc/mappify)
+           (sc/cast-with {:week parse-int
+                          :2016 parse-int
+                          :2017 parse-int
+                          :2018 parse-int
+                          :2019 parse-int
+                          :2020 parse-int
+                          :2019-accum parse-int
+                          :2020-accum parse-int}))))
 
 
-  (def accumulated-points-rc
-    (concat [{:year "2020" :month 4.5 :diff 8072 ;; May 20 number from first article
-              :type "xssmortality-points" :date "May/20/2020"}]
-            (drop 1 (map (fn [r] {:date (:date r) :diff (:diff r) :type "xssmortality-points"})
-                         (reduce accum []
-                                 (filter #(= (:year %) "2020") month-items-bars-diff))))))
+  (def week-dates
+    ["March/1/2020"
+     "March/8/2020"
+     "March/15/2020"
+     "March/22/2020"
+     "March/29/2020"
+     "April/05/2020"
+     "April/12/2020"
+     "April/19/2020"
+     "April/26/2020"
+     "May/3/2020"
+     "May/10/2020"
+     "May/17/2020"
+     "May/24/2020"
+     "May/31/2020"
+     "June/7/2020"])
 
-  ;; chart 5 unpublished
-  (oz/view! (viz/chart5-line-plot (concat
-                                   accumulated-points-rc
-                                   soft-chart-data) :date :count :type))
 
-  ;; us state data from
-  ;; https://www.washingtonpost.com/graphics/2020/investigations/coronavirus-excess-deaths-may/
-  (def table-data
-    [{:place "Indiana" :deaths 14386 :xssdeaths 1730 :covid-deaths 1482}
-     {:place "Nuevo Hampshire" :deaths 2590 :xssdeaths 168 :covid-deaths 132}
-     {:place "Nueva York (Cuidad)" :deaths 33897 :xssdeaths 23615 :covid-deaths 17135}
-     {:place "Utah" :deaths 3922 :xssdeaths 102 :covid-deaths 73}
-     {:place "Florida" :deaths 44306 :xssdeaths 2750 :covid-deaths 1838}
-     {:place "Oregon" :deaths 7209 :xssdeaths 247 :covid-deaths 159}
-     {:place "California" :deaths 56590 :xssdeaths 4753 :covid-deaths 2771}
-     {:place "Texas" :deaths 40978 :xssdeaths 2870 :covid-deaths 1129}
-     {:place "Carolina del Sur" :deaths 10514 :xssdeaths 1087 :covid-deaths 326}
-     {:place "CDMX"
-      :deaths (:count (last months2020))
-      :xssdeaths (:diff (last accumulated-points-rc))
-      :covid-deaths (:count (last total-items))}])
+  (def weeks2019
+    (map (fn [date count]
+           {:date date :count count :year "2019" :predicted false})
+         week-dates
+         (filter #(> % 0) (map :2019-accum weeks))))
 
-  (oz/view! (viz/single-bar-percent {:proportion "75"
-                                     :place "CDMX"}))
 
-  ;; table 1
-  (oz/view! (viz/covid-xss-table table-data)))
+  (def weeks2020
+    (map (fn [date count]
+           {:date date :count count :year "2020" :predicted false})
+         week-dates
+         (filter #(> % 0) (map :2020-accum weeks))))
+
+
+
+  (def accumulated-points
+    (concat
+     inegi2016
+     inegi2017
+     inegi2018
+     weeks2019
+     weeks2020
+     (map (fn [x] (into x {:predicted false
+                            :date (get month-numbers-2019 (:month x))}))
+          (filter #(<= (:month %) 1)  months2019))
+     (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
+          (filter #(< (:month %) 1) months2020))
+     [{:year "2019", :count 0, :date "Jan/1/2020"
+       :predicted false}
+      {:year "2019" :date "Dec/31/2020"
+       :count (apply + (map :count cy2019c))}]
+     [{:year "2020",
+       :count 0, :date "Jan/1/2020" :predicted false}]))
+
+
+
+
+  ;;; Chart 1 (time series)
+  (oz/view! (viz/chart1-line-plot accumulated-points :date :count :year))
+
+
+  (defn year-avg
+    [numbers]
+    (let [numbers' (filter #(not= nil %) numbers)]
+      (if (empty? numbers')
+        0
+        (/ (reduce + numbers') (* 1.0 (count numbers'))))))
+
+
+  (def weekly-chart-data
+    (->> weeks
+     (map (fn [w] (let [avg (year-avg [(:2016 w)
+                                       (:2017 w)
+                                       (:2018 w)
+                                       (if (and (>= (:week w) 10) (<= (:week w) 23))
+                                         (:2019 w))])]
+                    [{:week (:week w) :count (:2016 w) :year "2016"}
+                     {:week (:week w) :count (:2017 w) :year "2017"}
+                     {:week (:week w) :count (:2018 w) :year "2018"}
+                     {:week (:week w) :count (:2019 w) :year "2019"}
+                     {:week (:week w) :count (:2020 w) :year "2020"}
+                     {:week (:week w) :year "Promedio" :count  avg}
+                     {:week (:week w) :area (:2020 w)  :year "area" :avgy avg}])))
+     (apply concat)
+     (filter #(or (not= (:year %) "2019")
+                  (and (>= (:week %) 10) (<= (:week %) 23))))
+     (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
+                        (>= (:week %) 24))))
+     (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
+                        (<= (:week %) 9))))
+     (filter #(>= (:week %) 10))
+     (filter #(<= (:week %) 52))
+     doall))
+
+
+  (def deaths-week-2020
+    (apply + (map :count (filter #(and (<= (:week %) 23)
+                                       (>= (:week %) 14)
+                                       (= (:year %) "2020"))
+                                 weekly-chart-data))))
+  (def deaths-week-avg
+    (apply + (map :count (filter #(and (<= (:week %) 23)
+                                       (>= (:week %) 14)
+                                       (= (:year %) "Promedio"))
+                                 weekly-chart-data))))
+
+  ;; chart 2
+  (oz/view! (viz/weekly-line-plot weekly-chart-data :week :count :year))
+
+
+  (def weekly-titles
+    {10 "8 marzo"
+     11 "15 marzo"
+     12 "22 marzo"
+     13 "29 marzo"
+     14 "5 abril"
+     15 "12 abril"
+     16 "19 abril"
+     17 "26 abril"
+     18 "3 mayo"
+     19 "10 mayo"
+     20 "17 mayo"
+     21 "24 mayo"
+     22 "31 mayo"
+     23 "7 junio"
+     24 "14 junio"})
+
+
+
+  (def weekly-dates
+    (sorted-map
+     "03/29/2020" 13
+     "04/05/2020" 14
+     "04/12/2020" 15
+     "04/19/2020" 16
+     "04/26/2020" 17
+     "05/03/2020" 18
+     "05/10/2020" 19
+     "05/17/2020" 20
+     "05/24/2020" 21
+     "05/31/2020" 22
+     "06/07/2020" 23))
+
+  (def cdmx-confirmed-deaths
+    (->> (slurp "https://raw.githubusercontent.com/mariorz/covid19-mx-time-series/master/data/full/by_hospital_state/deaths_confirmed_by_death_date_mx.csv")
+         (csv/read-csv)
+         (sc/mappify)
+         (filter #(= (:Estado %) "Ciudad de México"))
+         first))
+
+
+  (def cdmx-confirmed-weekly-deaths-accum
+    (map (comp parse-int #(get cdmx-confirmed-deaths (keyword %)))
+         (map mxts-format (keys weekly-dates))))
+
+
+  (def cdmx-confirmed-weekly-deaths
+    (reverse
+     (map (fn [[b a]] (- b a))
+          (partition 2 1 (reverse cdmx-confirmed-weekly-deaths-accum)))))
+
+  (def weekly-confirmed
+    (map (fn [week count]
+           {:week week :count count :year "Decesos confirmados"})
+         (vals weekly-dates)
+         (concat [0] cdmx-confirmed-weekly-deaths)))
+
+
+  (def weekly-xss
+    (map (fn [week2020 weekavg]
+           {:week (:week week2020)
+            :count (- (:count week2020) (:count weekavg))
+            :year "Excedente 2020"})
+         (filter #(= (:year %) "2020")
+                 (filter #(and (<= (:week %) 23)
+                               (>= (:week %) 10)) weekly-chart-data))
+         (filter #(= (:year %) "Promedio")
+                 (filter #(and (<= (:week %) 23)
+                               (>= (:week %) 10)) weekly-chart-data))))
+
+
+  (def weekly-avg
+    (filter #(= (:year %) "Promedio")
+            (filter #(and (<= (:week %) 23)
+                          (>= (:week %) 10)) weekly-chart-data)))
+
+  (def weekly-xss-pct
+    (map (fn [xss base]
+           (into xss {:pct (- (/ (:count xss) (:count base)) 0)
+                      :week-title (str "Semana " (:week xss) " (" (get weekly-titles (:week xss)) ")")}))
+         (filter #(>= (:week %) 10) weekly-xss)
+         weekly-avg))
+
+  ;; chart 3
+  (oz/view! (viz/grouped-bar-chart-diff-p weekly-xss-pct :week-title :pct :year))
+
+
+  ;; net bar chart (unpublished)
+  (oz/view! (viz/grouped-bar-chart-diff weekly-xss :week :count :year))
+
+
+
+  ;; chart 4
+  (oz/view! (viz/chart-stacked-cofirmed-xss (concat
+                                             (filter #(>= (:week %) 12) weekly-confirmed)
+                                             (filter #(>= (:week %) 12) weekly-xss))
+                                            :week :count :year))
+
+
+  ;; values for confirmados and sospechosos
+  ;; from db published at june 12
+  ;; with fecha_def at or before june 7
+  (def total-items
+    (let [june7-confirmed (- 4189 15)
+          june7-suspects 471]
+      [{:count (- deaths-week-2020 deaths-week-avg)
+        :cat "Exceso de Mortalidad"}
+       {:count june7-confirmed :cat "Confirmados"}
+       {:count (+ june7-confirmed june7-suspects) :cat "Confirmados+Sospechosos"}]))
+
+  ;; Chart 5, total excess mortality
+  (oz/view! (viz/chart4-bar-chart total-items :cat :count)))
+
 
 
 

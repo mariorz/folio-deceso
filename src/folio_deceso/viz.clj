@@ -5,13 +5,13 @@
 (defn chart1-line-plot
   [data-points x-key y-key z-key]
   {:data {:values data-points}
-   :width 600
-   :height 300
+   :width 900
+   :height 400
    :encoding {:x {:field x-key
                   :type "temporal"
                   :axis {:format "%b"
                          :tickBand "extent"
-                         :tickCount 7
+                         :tickCount 12
                          :labelFlush "10"}
                   :title nil}
               :y {:field y-key :type "quantitative"
@@ -22,11 +22,13 @@
               :color {:field z-key
                       :type "nominal"
                       :scale {:domain ["2016" "2017" "2018" "2019" "2020"]
-                              :range ["lightgray" "lightgray""lightgray" "gray" "crimson"]}
+                              :range ["lightgray" "lightgray""lightgray" "lightgray" "crimson"]}
                       :title nil}}
-   :mark {:type "line" :point true}
+   :mark {:type "line" :point false}
    :config {:axis {:grid true}
             :backgrounr "white"}})
+
+
 
 
 
@@ -83,7 +85,7 @@
 (defn grouped-bar-chart-diff
   [data-points x-key y-key z-key]
   {:data {:values data-points}
-   :width 800
+   :width 1000
    :height 500
    :encoding {:x {:field x-key
                   :type "ordinal"
@@ -126,7 +128,8 @@
    :height 500
    :encoding {:x {:field x-key :type "ordinal"
                   :title nil
-                  :axis {:labelFontSize 14}
+                  :axis {:labelFontSize 14
+                         :grid false}
                   :sort ["Jan/31/2020"
                          "Feb/28/2020"
                          "Mar/31/2020"
@@ -134,6 +137,7 @@
                          "May/31/2020"]}
               :y {:field y-key :type "quantitative"
                   :axis {:tickCount 8
+                         :grid true
                          :format ".0%"
                          :labelFontSize 15}
                   :title ""}
@@ -150,7 +154,7 @@
                    :fontSize 12
                    :align "center"
                    :baseline "bottom"
-                   :dy -23
+                   :dy -15
                    :color "black"
                    :fontWeight "bold"}}]
    :config {:views {:stroke "transparent"}
@@ -171,7 +175,7 @@
                   :axis {:labelFontSize 14}}
               :x {:field y-key :type "quantitative" :title ""
                   :axis {:labelFontSize 15 :tickCount 5}}}
-   :layer [{:mark {:type "bar" :color "crimson"}}
+   :layer [{:mark {:type "bar" :color "#ff4d4d"}}
            {:mark {:type "text"
                    :fontSize 14
                    :align "center"
@@ -294,3 +298,110 @@
                                                  (int (* 100.0 (/ (:covid-deaths p)
                                                                   (:xssdeaths p))))})]]]])
             places)]]]))
+
+
+
+(defn weekly-line-plot
+  [data-points x-key y-key z-key]
+  {:data {:values data-points}
+   :width 900
+   :height 400
+   :layer [{:mark {:type "line"
+                   :point false
+                   :interpolate "linear"}
+            :encoding {:x {:field x-key
+                           :title "Semanas"
+                           :type "quantitative"
+                           :scale {:domain [10 , 52]
+                                   :nice false
+                                   ;;:range [10, 52]
+                                   :tickMinStep 1}
+                           :axis {;;:tickBand "extent"
+                                  :grid false
+                                  :tickCount 42}}
+                       :y {:field y-key
+                           :axis {:grid true}
+                           :type "quantitative"
+                           :scale {:domain [1000,4500]}
+                           :title "Decesos semanales"}
+                       :color {:field z-key
+                               :type "nominal"
+                               :scale {:domain [2016, 2017, 2018, 2019, 2020, "Promedio", "area"]
+                                       :range ["lightgray" "lightgray" "lightgray" "lightgray" "crimson" "gray", "crimson"]}
+                               :legend {:orient "right"
+                                        :titleFontSize 14
+                                        :titleLimit 800
+                                        :labelLimit 800
+                                        :labelFontSize 14}
+                               :title "Año"}}}
+           {:mark {:type "line"
+                   :point false}
+            :encoding {:x {:field x-key
+                           :type "quantitative"}
+                       :y {:field y-key
+                           :type "quantitative"}
+                       :color {:field z-key
+                               :type "nominal"}}}
+
+           {:mark {:type "area"
+                   :point false
+                   :color "#222222"
+                   :interpolate "linear"}
+            :encoding {:opacity {:value 0.25}
+                       :x {:field x-key
+                           :type "quantitative"}
+                       :y {:field :area
+                           :axis {:grid true}
+                           :type "quantitative"
+                           :scale {:domain [1000,4500]}
+                           :aggregate "max"}
+                       :y2 {:field :avgy
+                            :aggregate "min"
+                            :type "quantitative"}
+                       :color {:field z-key
+                               :type "nominal"
+                               :scale {:domain ["area"]
+                                       :range ["crimson"]}
+                               :legend nil
+                               :title nil}}}]
+   :config {:axis {}
+            ;; :background "#fcf8e8"
+            :background "white"}})
+
+
+(defn chart-stacked-cofirmed-xss
+  [data-points x-key y-key z-key]
+  {:data {:values data-points}
+   :width 900
+   :height 400
+   :layer [{:mark {:type "area"
+                   :point false
+                   :interpolate "linear"}
+            :encoding {:opacity {:value 0.3}
+                       :x {:field x-key
+                           :title "Semanas"
+                           :type "quantitative"
+                           :scale {:domain [12, 23]}
+                           :axis {;;:tickBand "extent"
+                                  :grid false
+                                  :domain true
+                                  :tickCount 9}}
+                       :y {:field y-key
+                           :axis {:grid true}
+                           :sort ["Decesos confirmados" "Excedente 2020"]
+                           :type "quantitative"
+                           :scale {:domain [0,3500]}
+                           :title "Decesos semanales"}
+                       :color {:field z-key
+                               :type "nominal"
+                               :scale {:domain ["Excedente 2020" "Decesos confirmados"]
+                                       :range [ "crimson" "black"]}
+                               :legend {:orient "right"
+                                        :titleFontSize 14
+                                        :titleLimit 800
+                                        :labelLimit 800
+                                        :labelFontSize 14}
+                               :title "Serie"}}}]
+   :config {:axis {}
+            ;; :background "#fcf8e8"
+            :background "white"}})
