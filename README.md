@@ -23,14 +23,14 @@ For years prior to __2018__, the information is available on the [National Insti
 ### Weekly updates
 Weeks used for the following files correspond to the ISO week system. Each week starting on a Monday and closing on a Sunday.
 
-* [`inegi-days.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/inegi-days.csv)	: Number of daily deaths and cumulated deaths registered every day of the period 2016 - 2018 using information from the National Institute of Statistics, Geography and Informatics (INEGI).
-* [`Weeks.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/weeks.csv) : Number of weekly deaths registered in 2016, 2017, 2018 from INEGI and highest deaths certificate ID number for 2019 and 2020 using our methodology. 
+* [`inegi-days.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/inegi-days.csv)	: Number of daily deaths and acumulated deaths registered every day of the period 2016 - 2018 using information from the National Institute of Statistics, Geography and Informatics (INEGI).
+* [`Weeks.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/weeks.csv) : Number of weekly deaths registered in 2016, 2017, 2018 from INEGI, and total death certificate counts for 2019 and 2020 using our methodology. 
 
 ### First publication - Monthly data
-* [`Months2019.csv`](resources/months2019.csv) : Highest death certificate ID number by tribunal for each month of 2019.
-* [`Months2020.csv`](resources/months2020.csv) : Highest death certificate ID number by tribunal for each month of 2020.
+* [`Months2019.csv`](resources/months2019.csv) : Highest death certificate ID number by tribunal for each month in 2019.
+* [`Months2020.csv`](resources/months2020.csv) : Highest death certificate ID number by tribunal for each month in 2020.
 
-In order to verify the methodology used in the article, we drew three random samples of ID numbers for the three largest tribunals, which account for over 75% of the registered certificates, to confirm that they actually existed and that the date of deaths occurred within the expected period.  The samples for Tribunal 14, 18, and 51 are available here: [`Sample-juzgado14.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado14.csv) , [`Sample-juzgado18.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado18.csv) , [`Sample-juzgado51.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado51.csv) .
+In order to verify our methodology, we drew three random samples of ID numbers for the three largest tribunals, which account for over 75% of the registered certificates, to confirm that they actually existed and that the date of deaths occurred within the expected period.  The samples for Tribunal 14, 18, and 51 are available here: [`Sample-juzgado14.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado14.csv) , [`Sample-juzgado18.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado18.csv) , [`Sample-juzgado51.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/sample-juzgado51.csv) .
 
 As an additional sanity check, we counted the total number of registered certificates for each tribunal in 2016, 2017 and 2018 and compared those numbers against the officially published mortality data for those years. In all three cases, our methodology returned results higher than the official data, but all were below 0.6%, within our acceptable margin of error. The results of our certificate count for each of these years are in [`cy2016.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2016.edn), [`cy2017.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2017.edn) and [`cy2018.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2018.edn) files.
 
