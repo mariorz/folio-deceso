@@ -21,7 +21,7 @@ For years prior to __2018__, the information is available on the [National Insti
 # File description
 
 ### Weekly updates
-To create the following files, we used the ISO week system. Each week starting on a Monday and closing on a Sunday.
+Weeks used for the folloing files correspond to the ISO week system. Each week starting on a Monday and closing on a Sunday.
 
 * [`inegi-days.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/inegi-days.csv)	: Number of daily deaths and cumulated deaths registered every day of the period 2016 - 2018 using information from the National Institute of Statistics, Geography and Informatics (INEGI).
 * [`Weeks.csv`](https://github.com/mariorz/folio-deceso/blob/master/resources/weeks.csv) : Number of weekly deaths registered in 2016, 2017, 2018 from INEGI and highest deaths certificate ID number for 2019 and 2020 using our methodology. 
