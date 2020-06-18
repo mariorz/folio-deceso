@@ -34,9 +34,15 @@ In order to verify our methodology, we drew three random samples of ID numbers f
 
 As an additional sanity check, we counted the total number of registered certificates for each tribunal in 2016, 2017 and 2018 and compared those numbers against the officially published mortality data for those years. In all three cases, our methodology returned results higher than the official data, but all were below 0.6%, within our acceptable margin of error. The results of our certificate count for each of these years are in [`cy2016.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2016.edn), [`cy2017.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2017.edn) and [`cy2018.edn`](https://github.com/mariorz/folio-deceso/blob/master/resources/cy2018.edn) files.
 
+# License
+The data collected and analyzed is available under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+
+The data and files that we have generated from official sources are freely available for public use, as long as we are cited cited as a source.
+
+How to cite? --- Romero Zavala, Mario & Despeghel, Laurianne. (2020). *Excess mortality data for Mexico City 2020.* https://github.com/mariorz/folio-deceso
 
 # Authors
-This data has been collected and analyzed by [Mario Romero Zavala](https://twitter.com/mariorz) and Laurianne Despeghel.
+This data has been collected and analyzed by [Mario Romero Zavala](https://twitter.com/mariorz) and Laurianne Despeghel. 
 
 
 If you have any questions or suggestions, please email mario@romero.fm or lauriannedsp@gmail.com 
