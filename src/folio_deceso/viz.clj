@@ -381,7 +381,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 23]}
+                           :scale {:domain [12, 26]}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true
@@ -402,6 +402,122 @@
                                         :labelLimit 800
                                         :labelFontSize 14}
                                :title "Serie"}}}]
+   :config {:axis {}
+            ;; :background "#fcf8e8"
+            :background "white"}})
+
+
+
+
+(defn multiregion-line-plot
+  [data-points x-key y-key z-key]
+  {:data {:values data-points}
+   :width 200
+   :height 100
+   :encoding {:x {:field x-key
+                  :type "temporal"
+                  :axis {:format "%b"
+                         :tickBand "extent"
+                         :tickCount 12
+                         :grid false
+                         :labelFlush "10"}
+                  :title nil}
+              :y {:field y-key :type "quantitative"
+                  :title "Fallecimientos"
+                  :axis {:tickCount 6
+                         :grid true
+                         :labelFlush "10"}}
+              :strokeDash {:field :predicted :type "nominal" :title nil
+                           :legend nil}
+              :color {:field z-key
+                      :type "nominal"
+                      :scale {:domain ["expected" "2020"]
+                              :range ["gray" "crimson"]}
+                      :title nil}
+              :facet {:field "region"
+                      :type "nominal"
+                      :columns 3
+                      :title nil
+                      :spacing 20}}
+   :mark {:type "line" :point false}
+   ;;:resolve {:scale {:y "independent"}}
+   :config {:axis {}
+            :background "white"}})
+
+
+
+
+
+(defn multi-weekly-line-plot
+  [data-points x-key y-key z-key]
+  {:data {:values data-points}
+   ;;:repeat {:row [:region]}
+   :facet {:field "region"
+           :type "nominal"
+           :columns 3
+           :title nil
+           :spacing 20}
+   :width 200
+   :height 200
+   :columns 3
+   :spec {:layer [{:mark {:type "line"
+                          :point false
+                          :interpolate "linear"}
+                   :encoding {:x {:field x-key
+                                  ;;:title "Semanas"
+                                  :type "quantitative"
+                                  :scale {;;:domain [10 , 52]
+                                          :nice false
+                                          ;;:range [10, 52]
+                                          :tickMinStep 1}
+                                  :axis {;;:tickBand "extent"
+                                         :grid true
+                                         :tickCount 14}}
+                              :y {:field y-key
+                                  :axis {:grid true}
+                                  :type "quantitative"
+                                  ;; :scale {:domain [1000,4500]}
+                                  :title "Decesos semanales"}
+                              :color {:field z-key
+                                      :type "nominal"
+                                      :scale {:domain ["expected", "2020"]
+                                              :range ["gray", "crimson" "crimson"]}
+                                      :legend {:orient "right"
+                                               :titleFontSize 14
+                                               :titleLimit 800
+                                               :labelLimit 800
+                                               :labelFontSize 14}
+                                      :title "Año"}}}
+                  {:mark {:type "line"
+                          :point false}
+                   :encoding {:x {:field x-key
+                                  :type "quantitative"}
+                              :y {:field y-key
+                                  :type "quantitative"}
+                              :color {:field z-key
+                                      :type "nominal"}}}
+
+                  {:mark {:type "area"
+                          :point false
+                          :color "#222222"
+                          :interpolate "linear"}
+                   :encoding {:opacity {:value 0.25}
+                              :x {:field x-key
+                                  :type "quantitative"}
+                              :y {:field :area
+                                  :axis {:grid true}
+                                  :type "quantitative"
+                                  ;;:scale {:domain [000,4500]}
+                                  :aggregate "max"}
+                              :y2 {:field :avgy
+                                   :aggregate "min"
+                                   :type "quantitative"}
+                              :color {:field z-key
+                                      :type "nominal"
+                                      :scale {:domain ["area"]
+                                              :range ["crimson"]}
+                                      :legend nil
+                                      :title nil}}}]}
    :config {:axis {}
             ;; :background "#fcf8e8"
             :background "white"}})
