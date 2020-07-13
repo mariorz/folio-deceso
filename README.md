@@ -12,6 +12,7 @@ Different commits correspond to the different articles as follows:
 
 - [¿Qué nos dicen las actas de defunción de la CDMX? Actualización al 28 de junio 2020](https://datos.nexos.com.mx/?p=1480) published on July 3, 2020 -> [commit](https://github.com/mariorz/folio-deceso/tree/f5bc8c3fa79593a65e84e972218ba7ba4ef5e191)
 
+- [¿Qué nos dicen las actas de defunción de la CDMX? Actualización al 5 de julio 2020](https://datos.nexos.com.mx/?p=1498) published on July 13, 2020 -> [commit](https://github.com/mariorz/folio-deceso/tree/5bd5189880f92dac0c59ec02fdc46f4725f2de79)
 
 # Source data
 The data for __2019__ and __2020__ consist of a count of deaths certificates registered in the Civil Registry Tribunals of Mexico City. 
