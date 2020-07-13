@@ -138,12 +138,12 @@ table.calendar tbody tr td:first-child {
   padding-left: 4px;
   text-align:left;
   width: 120px;
-  #font-weight:bold;
-  background-color:none;
+  ;;font-weight:bold;
+  ;;background-color:none;
   border-bottom: 1px solid #202020;
 }
 
-table.calendar tbody:last-child {
+table.calendar tbody:nth-child(4) {
  
   background-color:pink;
   

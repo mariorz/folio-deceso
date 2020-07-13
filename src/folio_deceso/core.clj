@@ -140,7 +140,7 @@
 
   (def month-numbers-2020
     {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020"
-     4.5 "May/20/2020" 5 "May/31/2020" 6 "June/30/2020"})
+     4.5 "May/20/2020" 5 "May/31/2020" 6 "June/30/2020" 7 "July/30/2020"})
 
 
   (defn homogenize-year
@@ -210,7 +210,8 @@
      "June/7/2020"
      "June/14/2020"
      "June/21/2020"
-     "June/28/2020"])
+     "June/28/2020"
+     "July/05/2020"])
 
 
   (def weeks2019
@@ -267,7 +268,7 @@
          (map (fn [w] (let [avg (year-avg [(:2016 w)
                                            (:2017 w)
                                            (:2018 w)
-                                           (if (and (>= (:week w) 10) (<= (:week w) 26))
+                                           (if (and (>= (:week w) 10) (<= (:week w) 27))
                                              (:2019 w))])]
                         [{:week (:week w) :count (:2016 w) :year "2016"}
                          {:week (:week w) :count (:2017 w) :year "2017"}
@@ -278,9 +279,9 @@
                          {:week (:week w) :area (:2020 w)  :year "area" :avgy avg}])))
          (apply concat)
          (filter #(or (not= (:year %) "2019")
-                      (and (>= (:week %) 10) (<= (:week %) 26))))
+                      (and (>= (:week %) 10) (<= (:week %) 27))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
-                            (>= (:week %) 27))))
+                            (>= (:week %) 28))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
@@ -289,12 +290,13 @@
 
 
   (def deaths-week-2020
-    (apply + (map :count (filter #(and (<= (:week %) 26)
+    (apply + (map :count (filter #(and (<= (:week %) 27)
                                        (>= (:week %) 14)
                                        (= (:year %) "2020"))
                                  weekly-chart-data))))
+
   (def deaths-week-avg
-    (apply + (map :count (filter #(and (<= (:week %) 26)
+    (apply + (map :count (filter #(and (<= (:week %) 27)
                                        (>= (:week %) 14)
                                        (= (:year %) "Promedio"))
                                  weekly-chart-data))))
@@ -320,7 +322,8 @@
      23 "7 junio"
      24 "14 junio"
      25 "21 junio"
-     26 "28 junio"})
+     26 "28 junio"
+     27 "5 julio"})
 
 
 
@@ -339,7 +342,8 @@
      "06/07/2020" 23
      "06/14/2020" 24
      "06/21/2020" 25
-     "06/28/2020" 26))
+     "06/28/2020" 26
+     "07/05/2020" 27))
 
   (def cdmx-confirmed-deaths
     (->> (slurp "https://raw.githubusercontent.com/mariorz/covid19-mx-time-series/master/data/full/by_hospital_state/deaths_confirmed_by_death_date_mx.csv")
@@ -372,16 +376,16 @@
             :count (- (:count week2020) (:count weekavg))
             :year "Excedente 2020"})
          (filter #(= (:year %) "2020")
-                 (filter #(and (<= (:week %) 26)
+                 (filter #(and (<= (:week %) 27)
                                (>= (:week %) 10)) weekly-chart-data))
          (filter #(= (:year %) "Promedio")
-                 (filter #(and (<= (:week %) 26)
+                 (filter #(and (<= (:week %) 27)
                                (>= (:week %) 10)) weekly-chart-data))))
 
 
   (def weekly-avg
     (filter #(= (:year %) "Promedio")
-            (filter #(and (<= (:week %) 26)
+            (filter #(and (<= (:week %) 27)
                           (>= (:week %) 10)) weekly-chart-data)))
 
   (def weekly-xss-pct
@@ -408,12 +412,12 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published at june 30
-  ;; with fecha_def at or before june 28
+  ;; from db published at july 9
+  ;; with fecha_def at or before july 5
   (def total-items
-    (let [june7-confirmed (- 6548 15)
-          june7-suspects 819]
-      [{:count (- deaths-week-2020 deaths-week-avg)
+    (let [june7-confirmed (- 7234 15)
+          june7-suspects 870]
+      [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count june7-confirmed :cat "Confirmados"}
        {:count (+ june7-confirmed june7-suspects) :cat "Confirmados+Sospechosos"}]))
@@ -464,7 +468,7 @@
          (map (fn [w] (let [avg (year-avg [(:2016 w)
                                            (:2017 w)
                                            (:2018 w)
-                                           (if (and (>= (:week w) 10) (<= (:week w) 26))
+                                           (if (and (>= (:week w) 10) (<= (:week w) 27))
                                              (:2019 w))])]
                         [{:week (:week w) :count (:2020 w) :series "2020" :region "CDMX"}
                          {:week (:week w) :series "expected" :count  avg :region "CDMX"}
@@ -472,7 +476,7 @@
          (apply concat)
 
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
-                            (>= (:week %) 27))))
+                            (>= (:week %) 28))))
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 0))
@@ -493,37 +497,78 @@
              :week :count :series))
 
 
+  (def populations
+    {"CDMX" 8918653
+     "Guayas" 4327800
+     "Lombardia region" 9911665
+     "London" 8908081 ;; 2018 wikipedia
+     "Madrid" 6587711
+     "New York City" 8398748
+     "Metropolitana de Santiago" 7112808
+     "Lima"   9674755 ;; 2020 wikpedia
+     "Ile-de-France" 12174880})
 
 
   (defn xss-deaths
     [region-data start-week end-week]
-    (let [d (filter #(and (>= (:week %) start-week) (<= (:week %) end-week)) region-data)
+    (let [;;_ (println (:region (first region-data)))
+          region (:region (first region-data))
+          d (if (= start-week -1)
+              region-data
+              (filter #(and (>= (:week %) start-week) (<= (:week %) end-week)) region-data))
           d2020 (apply + (map :count
                               (filter #(= (:series %) "2020") d)))
           dexpected (apply + (map :count
-                                  (filter #(= (:series %) "expected") d)))]
-      {:net (- d2020 dexpected)
-       :pct (* 100.0 (- (/ d2020 dexpected) 1))}))
+                                  (filter #(= (:series %) "expected") d)))
+          net (- d2020 dexpected)
+          xss-pop (* (/ net (get populations region)) 1000000.0)]
+      {:xss-net net
+       :xss-pop xss-pop
+       :start-week start-week
+       :end-week end-week
+       :region (:region (first region-data))
+       :xss-pct (* 100.0 (- (/ d2020 dexpected) 1))}))
 
 
-  (xss-deaths cdmx-data 14 26)
-  ;; {:net 22705.0, :pct 126.44094225093276}
-  (xss-deaths (ft-region-data ft-data "Guayas") 10 25)
-  ;; {:net 14277, :pct 235.20593080724882}
-  (xss-deaths (ft-region-data ft-data "Lombardia region") 9 17)
-  ;; {:net 25224, :pct 145.2409742615305}
-  (xss-deaths (ft-region-data ft-data "London") 12 22)
-  ;; {:net 10066, :pct 99.63377214688705}
-  (xss-deaths (ft-region-data ft-data "Madrid") 11 20)
-  ;; {:net 16191, :pct 185.4002061147372}
-  (xss-deaths (ft-region-data ft-data "New York City") 11 20)
-  ;;{:net 25172, :pct 245.94040058622372})
-  (xss-deaths (ft-region-data ft-data "Metropolitana de Santiago") 18 24)
-  ;;{:net 5582, :pct 95.33731853116993})
-  (xss-deaths (ft-region-data ft-data "Lima") 14 24)
-  ;;{:net 17538, :pct 267.8375076359194})
-  (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 22))
- ; ;{:net 11569, :pct 73.37477008942727}
+  (def regions
+    (->> ft-data
+         (csv/read-csv)
+         (sc/mappify)
+         (filter #(= (:year %) "2020"))
+         (map :region)
+         distinct
+         (filter #(not (contains? #{"Italy" "Spain" "St Petersburg" "US" "UK"
+                                    "England And Wales" "England" "Brazil" "Peru"
+                                    "Ecuador" "France" "Netherlands" "Chile"} %)))))
+
+
+  (def x (map #(xss-deaths (ft-region-data ft-data %) -1 52)
+              regions))
+
+
+  (def cities-xss
+    [(xss-deaths cdmx-data 14 27)
+     ;; {:xss-net 14183, :xss-pop 3277.184712787097, :start-week 11, :end-week 22, :region "Guayas", :xss-pct 291.5912828947368}
+     (xss-deaths (ft-region-data ft-data "Guayas") 11 22)
+     ;; {:net 14277, :per-capita 3916.353470856948, :region "Guayas", :pct 235.20593080724882}
+     (into (xss-deaths (ft-region-data ft-data "Lombardia region") 9 17) {:region "Lombardía"})
+     ;; {:net 25224, :per-capita 2500.276552948887, :region "Lombardia region", :pct 145.2409742615305}
+     (into (xss-deaths (ft-region-data ft-data "London") 12 22) {:region "Londres"})
+     ;; {:net 10066, :per-capita 1129.985234754825, :region "London", :pct 99.63377214688705}
+     (xss-deaths (ft-region-data ft-data "Madrid") 11 20)
+     ;;{:net 16191, :per-capita 2551.77304964539, :region "Madrid", :pct 185.4002061147372}
+     (into (xss-deaths (ft-region-data ft-data "New York City") 11 20) {:region "Nueva York (Ciudad)"})
+     ;; {:net 25172, :per-capita 3079.0936367640747, :region "New York City", :pct 245.94040058622372}
+     (xss-deaths (ft-region-data ft-data "Metropolitana de Santiago") 18 24)
+     ;; {:net 5582, :per-capita 793.2592010677592, :region "Metropolitana de Santiago", :pct 95.33731853116993}
+     (xss-deaths (ft-region-data ft-data "Lima") 14 24)
+     ;;{:net 17538, :pct 267.8375076359194})
+     (into (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 22)
+           {:region "Ile-de-France (región de París)"})])
+    ;;{:net 11569, :pct 73.37477008942727}
+  (oz/view! (viz/cities-xss-table (reverse (sort-by :xss-pop cities-xss)))))
+
+
 
 
 

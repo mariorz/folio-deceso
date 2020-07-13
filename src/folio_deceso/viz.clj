@@ -301,6 +301,30 @@
 
 
 
+(defn cities-xss-table
+  [places]
+  (let [headers ["" "Exceso de mortalidad" "Exceso de mortalidad (%)"
+                 "Semana inicial" "Semana final" "Exceso de mortalidad/población millones"]]
+    [:html
+     [:head
+      [:style (slurp "resources/style.css")]]
+     [:body
+      [:table {:class "calendar"}
+       [:thead
+        [:tr
+         (map (fn [el] [:th el]) headers)]]
+       (map (fn [p] [:tbody
+                     [:tr
+                      [:td (:region p)]
+                      [:td (format "%,.0f" (float (:xss-net p)))]
+                      [:td (format "%,.0f%%" (:xss-pct p))]
+                      [:td (:start-week p)]
+                      [:td (:end-week p)]
+                      [:td (format "%,.0f" (:xss-pop p))]]])
+            places)]]]))
+
+
+
 (defn weekly-line-plot
   [data-points x-key y-key z-key]
   {:data {:values data-points}
@@ -381,11 +405,11 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 26]}
+                           :scale {:domain [12, 27]}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true
-                                  :tickCount 9}}
+                                  :tickCount 15}}
                        :y {:field y-key
                            :axis {:grid true}
                            :sort ["Decesos confirmados" "Excedente 2020"]
