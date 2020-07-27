@@ -304,7 +304,7 @@
 (defn cities-xss-table
   [places]
   (let [headers ["" "Exceso de mortalidad" "Exceso de mortalidad (%)"
-                 "Semana inicial" "Semana final" "Exceso de mortalidad/población millones"]]
+                 "Semana inicial" "Semana final" "Población" "Exceso de mortalidad/población millones"]]
     [:html
      [:head
       [:style (slurp "resources/style.css")]]
@@ -320,6 +320,7 @@
                       [:td (format "%,.0f%%" (:xss-pct p))]
                       [:td (:start-week p)]
                       [:td (:end-week p)]
+                      [:td (format "%,d" (:population p))]
                       [:td (format "%,.0f" (:xss-pop p))]]])
             places)]]]))
 
@@ -405,7 +406,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 27]}
+                           :scale {:domain [12, 30]}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true
