@@ -1,5 +1,4 @@
-(ns folio-deceso.viz
-  (:require [oz.core :as oz]))
+(ns folio-deceso.viz)
 
 
 (defn chart1-line-plot
@@ -22,7 +21,8 @@
               :color {:field z-key
                       :type "nominal"
                       :scale {:domain ["2016" "2017" "2018" "2019" "2020"]
-                              :range ["lightgray" "lightgray""lightgray" "lightgray" "crimson"]}
+                              :range ["lightgray" "lightgray""lightgray"
+                                      "lightgray" "crimson"]}
                       :title nil}}
    :mark {:type "line" :point false}
    :config {:axis {:grid true}
@@ -47,7 +47,8 @@
               :column {:field z-key :type "ordinal" :spacing 10}
               :color {:field z-key :type "nominal"
                       :scale {:domain ["2016" "2017" "2018" "2019" "2020"]
-                              :range ["lightgray" "lightgray""lightgray" "gray" "crimson"]}}}
+                              :range ["lightgray" "lightgray""lightgray"
+                                      "gray" "crimson"]}}}
    :mark "bar"
    :config {:views {:stroke "transparent"}
             :axis {:grid true, :tickBand "extent"
@@ -223,16 +224,19 @@
                        :y {:field y-key :type "quantitative"
                            :title nil
                            :axis {}}
-                       :color {:field z-key
-                               :type "nominal"
-                               :scale {:domain ["Confirmados+Sospechosos" "Exceso de Mortalidad"]
-                                       :range ["gray" "crimson"]}
-                               :legend {:orient "top"
-                                        :titleFontSize 14
-                                        :titleLimit 800
-                                        :labelLimit 800
-                                        :labelFontSize 14}
-                               :title nil}}}
+                       :color
+                       {:field z-key
+                        :type "nominal"
+                        :scale
+                        {:domain
+                         ["Confirmados+Sospechosos" "Exceso de Mortalidad"]
+                         :range ["gray" "crimson"]}
+                        :legend {:orient "top"
+                                 :titleFontSize 14
+                                 :titleLimit 800
+                                 :labelLimit 800
+                                 :labelFontSize 14}
+                        :title nil}}}
            {:mark {:type "text"
                    :fontSize 12
                    :align "center"
@@ -277,7 +281,9 @@
 
 (defn covid-xss-table
   [places]
-  (let [headers ["" "Decesos" "Exceso de mortalidad" "Decesos oficiales por COVID-19" "Decesos oficiales COVID-19 como proporción del exceso de mortalidad (%)"]]
+  (let [headers ["" "Semana inicial" "Semana final" "Exceso de mortalidad"
+                 "Decesos oficiales por COVID-19"
+                 "Decesos oficiales COVID-19 como proporción del exceso de mortalidad (%)"]]
     [:html
      [:head
       [:style (slurp "resources/style.css")]]
@@ -286,17 +292,20 @@
        [:thead
         [:tr
          (map (fn [el] [:th el]) headers)]]
-       (map (fn [p] [:tbody
-                     [:tr
-                      [:td (:place p)]
-                      [:td (format "%,d" (:deaths p))]
-                      [:td (format "%,d" (:xssdeaths p))]
-                      [:td (format "%,d" (:covid-deaths p))]
-                      [:td [:vega-lite
-                            (single-bar-percent {:place (:place p)
-                                                 :proportion
-                                                 (int (* 100.0 (/ (:covid-deaths p)
-                                                                  (:xssdeaths p))))})]]]])
+       (map (fn [p]
+              [:tbody
+               [:tr
+                [:td (:country p)]
+                [:td (:start-week p)]
+                [:td (:end-week p)]
+                [:td (format "%,d" (:xss-net p))]
+                [:td (format "%,d" (:confirmed-deaths p))]
+                [:td [:vega-lite
+                      (single-bar-percent
+                       {:place (:country p)
+                        :proportion
+                        (int (* 100.0 (/ (:confirmed-deaths p)
+                                         (:xss-net p))))})]]]])
             places)]]]))
 
 
@@ -304,12 +313,13 @@
 (defn cities-xss-table
   [places]
   (let [headers ["" "Exceso de mortalidad" "Exceso de mortalidad (%)"
-                 "Semana inicial" "Semana final" "Población" "Exceso de mortalidad/población millones"]]
+                 "Semana inicial" "Semana final"
+                 "Población" "Exceso de mortalidad/población millones"]]
     [:html
      [:head
       [:style (slurp "resources/style.css")]]
      [:body
-      [:table {:class "calendar"}
+      [:table {:class "cities-xss"}
        [:thead
         [:tr
          (map (fn [el] [:th el]) headers)]]
@@ -322,6 +332,34 @@
                       [:td (:end-week p)]
                       [:td (format "%,d" (:population p))]
                       [:td (format "%,.0f" (:xss-pop p))]]])
+            places)]]]))
+
+
+
+(defn countries-xss-table
+  [places]
+  (let [headers ["" "Exceso de mortalidad"
+                 "Semana inicial" "Semana final" "Población"
+                 "Exceso de mortalidad / población millones"
+                 "Regreso a niveles esperados"]]
+    [:html
+     [:head
+      [:style (slurp "resources/style.css")]]
+     [:body
+      [:table {:class "incidence"}
+       [:thead
+        [:tr
+         (map (fn [el] [:th el]) headers)]]
+       (map (fn [p] [:tbody
+                     [:tr
+                      [:td (:country p)]
+                      [:td (format "%,.0f" (float (:xss-net p)))]
+                      [:td (:start-week p)]
+                      [:td (:end-week p)]
+                      [:td (format "%,d" (:population p))]
+                      [:td (format "%,.0f" (:xss-pop p))]
+                      [:td (if (:back-to-expected p)
+                             "Sí" "No")]]])
             places)]]]))
 
 
@@ -349,16 +387,21 @@
                            :type "quantitative"
                            :scale {:domain [1000,4500]}
                            :title "Decesos semanales"}
-                       :color {:field z-key
-                               :type "nominal"
-                               :scale {:domain [2016, 2017, 2018, 2019, 2020, "Promedio", "area"]
-                                       :range ["lightgray" "lightgray" "lightgray" "lightgray" "crimson" "gray", "crimson"]}
-                               :legend {:orient "right"
-                                        :titleFontSize 14
-                                        :titleLimit 800
-                                        :labelLimit 800
-                                        :labelFontSize 14}
-                               :title "Año"}}}
+                       :color
+                       {:field z-key
+                        :type "nominal"
+                        :scale
+                        {:domain
+                         [2016, 2017, 2018, 2019, 2020, "Promedio", "area"]
+                         :range
+                         ["lightgray" "lightgray" "lightgray" "lightgray"
+                          "crimson" "gray", "crimson"]}
+                        :legend {:orient "right"
+                                 :titleFontSize 14
+                                 :titleLimit 800
+                                 :labelLimit 800
+                                 :labelFontSize 14}
+                        :title "Año"}}}
            {:mark {:type "line"
                    :point false}
             :encoding {:x {:field x-key
@@ -419,7 +462,8 @@
                            :title "Decesos semanales"}
                        :color {:field z-key
                                :type "nominal"
-                               :scale {:domain ["Excedente 2020" "Decesos confirmados"]
+                               :scale {:domain
+                                       ["Excedente 2020" "Decesos confirmados"]
                                        :range [ "crimson" "black"]}
                                :legend {:orient "right"
                                         :titleFontSize 14
@@ -505,8 +549,10 @@
                                   :title "Decesos semanales"}
                               :color {:field z-key
                                       :type "nominal"
-                                      :scale {:domain ["expected", "2020"]
-                                              :range ["gray", "crimson" "crimson"]}
+                                      :scale {:domain
+                                              ["expected", "2020"]
+                                              :range
+                                              ["gray", "crimson" "crimson"]}
                                       :legend {:orient "right"
                                                :titleFontSize 14
                                                :titleLimit 800

@@ -1,15 +1,11 @@
 (ns folio-deceso.core
-  (:require [oz.core :as oz]
-            [semantic-csv.core :as sc]
-            [clj-http.client :as http]
-            [clojure.java.io :as io]
-            [clojure.edn :as edn]
-            [clj-time.core :as t]
-            [clj-time.format :as f]
-            [clj-time.local :as l]
+  (:require [clj-time.format :as f]
             [clojure.data.csv :as csv]
-            [folio-deceso.viz :as viz]))
-
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [folio-deceso.viz :as viz]
+            [oz.core :as oz]
+            [semantic-csv.core :as sc]))
 
 
 
@@ -50,20 +46,23 @@
 
 (comment
   (def saved-sample-14
-    (with-open [in-file (clojure.java.io/reader "resources/sample-juzgado14.csv")]
+    (with-open [in-file
+                (clojure.java.io/reader "resources/sample-juzgado14.csv")]
       (doall
        (map make-sample-map
             (rest (csv/read-csv in-file))))))
 
   (def saved-sample-18
-    (with-open [in-file (clojure.java.io/reader "resources/sample-juzgado18.csv")]
+    (with-open [in-file
+                (clojure.java.io/reader "resources/sample-juzgado18.csv")]
       (doall
        (map make-sample-map
             (rest (csv/read-csv in-file))))))
 
 
   (def saved-sample-51
-    (with-open [in-file (clojure.java.io/reader "resources/sample-juzgado51.csv")]
+    (with-open [in-file
+                (clojure.java.io/reader "resources/sample-juzgado51.csv")]
       (doall
        (map make-sample-map
             (rest (csv/read-csv in-file)))))))
@@ -145,7 +144,9 @@
 
   (defn homogenize-year
     [s]
-    (f/unparse (f/formatter "MM/dd/2020") (f/parse (f/formatter "dd/MM/yyyy") s)))
+    (f/unparse
+     (f/formatter "MM/dd/2020")
+     (f/parse (f/formatter "dd/MM/yyyy") s)))
 
   (def inegi-days
     (with-open [in-file (io/reader "resources/inegi-days.csv")]
@@ -166,7 +167,8 @@
 
   (def inegi2016
     (concat
-     (drop-last 1 (filter #(and (= (:year %) "2016") (= (:last-doy %) 1)) inegi-days))
+     (drop-last
+      1 (filter #(and (= (:year %) "2016") (= (:last-doy %) 1)) inegi-days))
      [(last (drop-last 1 (filter #(= (:year %) "2016") inegi-days)))]))
 
   (def inegi2017
@@ -174,7 +176,8 @@
 
   (def inegi2018
     (concat
-     (drop-last 1 (filter #(and (= (:year %) "2018") (= (:last-doy %) 1)) inegi-days))
+     (drop-last
+      1 (filter #(and (= (:year %) "2018") (= (:last-doy %) 1)) inegi-days))
      [(last (filter #(= (:year %) "2018") inegi-days))]))
 
   (def weeks
@@ -213,7 +216,8 @@
      "June/28/2020"
      "July/05/2020"
      "July/12/2020"
-     "July/19/2020"])
+     "July/19/2020"
+     "July/26/2020"])
 
 
   (def weeks2019
@@ -267,23 +271,25 @@
 
   (def weekly-chart-data
     (->> weeks
-         (map (fn [w] (let [avg (year-avg [(:2016 w)
-                                           (:2017 w)
-                                           (:2018 w)
-                                           (if (and (>= (:week w) 10) (<= (:week w) 29))
-                                             (:2019 w))])]
-                        [{:week (:week w) :count (:2016 w) :year "2016"}
-                         {:week (:week w) :count (:2017 w) :year "2017"}
-                         {:week (:week w) :count (:2018 w) :year "2018"}
-                         {:week (:week w) :count (:2019 w) :year "2019"}
-                         {:week (:week w) :count (:2020 w) :year "2020"}
-                         {:week (:week w) :year "Promedio" :count  avg}
-                         {:week (:week w) :area (:2020 w)  :year "area" :avgy avg}])))
+         (map (fn [w]
+                (let [avg (year-avg
+                           [(:2016 w)
+                            (:2017 w)
+                            (:2018 w)
+                            (if (and (>= (:week w) 10) (<= (:week w) 29))
+                              (:2019 w))])]
+                  [{:week (:week w) :count (:2016 w) :year "2016"}
+                   {:week (:week w) :count (:2017 w) :year "2017"}
+                   {:week (:week w) :count (:2018 w) :year "2018"}
+                   {:week (:week w) :count (:2019 w) :year "2019"}
+                   {:week (:week w) :count (:2020 w) :year "2020"}
+                   {:week (:week w) :year "Promedio" :count  avg}
+                   {:week (:week w) :area (:2020 w) :year "area" :avgy avg}])))
          (apply concat)
          (filter #(or (not= (:year %) "2019")
-                      (and (>= (:week %) 10) (<= (:week %) 29))))
+                      (and (>= (:week %) 10) (<= (:week %) 30))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
-                            (>= (:week %) 30))))
+                            (>= (:week %) 31))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
@@ -292,13 +298,13 @@
 
 
   (def deaths-week-2020
-    (apply + (map :count (filter #(and (<= (:week %) 29)
+    (apply + (map :count (filter #(and (<= (:week %) 30)
                                        (>= (:week %) 14)
                                        (= (:year %) "2020"))
                                  weekly-chart-data))))
 
   (def deaths-week-avg
-    (apply + (map :count (filter #(and (<= (:week %) 29)
+    (apply + (map :count (filter #(and (<= (:week %) 30)
                                        (>= (:week %) 14)
                                        (= (:year %) "Promedio"))
                                  weekly-chart-data))))
@@ -327,7 +333,8 @@
      26 "28 junio"
      27 "5 julio"
      28 "12 julio"
-     29 "19 julio"})
+     29 "19 julio"
+     30 "26 julio"})
 
 
 
@@ -349,10 +356,14 @@
      "06/28/2020" 26
      "07/05/2020" 27
      "07/12/2020" 28
-     "07/19/2020" 29))
+     "07/19/2020" 29
+     "07/26/2020" 30))
 
   (def cdmx-confirmed-deaths
-    (->> (slurp "https://raw.githubusercontent.com/mariorz/covid19-mx-time-series/master/data/full/by_hospital_state/deaths_confirmed_by_death_date_mx.csv")
+    (->> (slurp (str
+                 "https://raw.githubusercontent.com/"
+                 "mariorz/covid19-mx-time-series/master/data/"
+                 "full/by_hospital_state/deaths_confirmed_by_death_date_mx.csv"))
          (csv/read-csv)
          (sc/mappify)
          (filter #(= (:Estado %) "Ciudad de México"))
@@ -382,47 +393,55 @@
             :count (- (:count week2020) (:count weekavg))
             :year "Excedente 2020"})
          (filter #(= (:year %) "2020")
-                 (filter #(and (<= (:week %) 29)
+                 (filter #(and (<= (:week %) 30)
                                (>= (:week %) 10)) weekly-chart-data))
          (filter #(= (:year %) "Promedio")
-                 (filter #(and (<= (:week %) 29)
+                 (filter #(and (<= (:week %) 30)
                                (>= (:week %) 10)) weekly-chart-data))))
 
 
   (def weekly-avg
     (filter #(= (:year %) "Promedio")
-            (filter #(and (<= (:week %) 29)
+            (filter #(and (<= (:week %) 30)
                           (>= (:week %) 10)) weekly-chart-data)))
 
   (def weekly-xss-pct
     (map (fn [xss base]
            (into xss {:pct (- (/ (:count xss) (:count base)) 0)
-                      :week-title (str "Semana " (:week xss) " (" (get weekly-titles (:week xss)) ")")}))
+                      :week-title
+                      (str "Semana "
+                           (:week xss)
+                           " ("
+                           (get weekly-titles (:week xss))
+                           ")")}))
          (filter #(>= (:week %) 10) weekly-xss)
          weekly-avg))
 
   ;; chart 3
-  (oz/view! (viz/grouped-bar-chart-diff-p weekly-xss-pct :week-title :pct :year))
+    (oz/view!
+     (viz/grouped-bar-chart-diff-p weekly-xss-pct :week-title :pct :year))
 
 
   ;; net bar chart (unpublished)
-  (oz/view! (viz/grouped-bar-chart-diff weekly-xss :week :count :year))
+    (oz/view!
+     (viz/grouped-bar-chart-diff weekly-xss :week :count :year))
 
 
 
   ;; chart 4
-  (oz/view! (viz/chart-stacked-cofirmed-xss (concat
-                                             (filter #(>= (:week %) 12) weekly-confirmed)
-                                             (filter #(>= (:week %) 12) weekly-xss))
-                                            :week :count :year))gi
+    (oz/view! (viz/chart-stacked-cofirmed-xss
+               (concat
+                (filter #(>= (:week %) 12) weekly-confirmed)
+                (filter #(>= (:week %) 12) weekly-xss))
+               :week :count :year))
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published at july 23
-  ;; with fecha_def at or before july 19
+  ;; from db published on aug 2
+  ;; with fecha_def at or before july 26
   (def total-items
-    (let [confirmed (- 8406 15) ;; 15 confirmed before week 12
-          suspects 849]
+    (let [confirmed (- 8837 15) ;; 15 confirmed before week 12
+          suspects 850]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -434,7 +453,67 @@
 
 
   (def ft-data
-    (slurp "https://raw.githubusercontent.com/Financial-Times/coronavirus-excess-mortality-data/master/data/ft_excess_deaths.csv"))
+    (slurp (str "https://raw.githubusercontent.com/"
+                "Financial-Times/coronavirus-excess-mortality-data/master/"
+                "data/ft_excess_deaths.csv")))
+
+  (def jhu-data
+    (slurp "resources/Covid_19_global_countries.csv"))
+
+
+
+  (defn country-deaths
+    [country date]
+    (let [c (if (= country "UK")
+              "United Kingdom" country)]
+      (case c
+        (->> jhu-data
+             (csv/read-csv)
+             (sc/mappify)
+             (filter #(= (:Country %) c))
+             (filter #(= (:date %) date))
+             first
+             :Deaths
+             parse-int))))
+
+
+  (defn ft-country-data
+    [bulk-data country]
+    (->> bulk-data
+         (csv/read-csv)
+         (sc/mappify)
+         (filter #(= (:year %) "2020"))
+
+         (filter #(and (= (:country %) country)
+                       (= (:region %) country)))
+         (sc/cast-with {:week parse-int
+                        :excess_deaths_pct edn/read-string
+                        :excess_deaths parse-int
+                        :expected_deaths parse-int
+                        :deaths parse-int})
+         (drop-while #(and (< (:excess_deaths_pct %) 10.0)
+                           (not (contains? #{"Peru" "Ecuador" "Chile"} (:country %)))))
+         (take-while #(or (> (:excess_deaths_pct %) 10.0)
+                          (contains? #{"Peru" "Ecuador" "Chile"} (:country %))))
+
+         (map (fn [p] [{:count (:deaths p)
+                        :end_date (:date p)
+                        :country (:country p)
+                        :week (:week p)
+                        :series "2020"}
+                       {:count (:expected_deaths p)
+                        :end_date (:date p)
+                        :week (:week p)
+                        :country (:country p)
+                        :series "expected"}
+                       {:area (:deaths p)
+                        :avgy (:expected_deaths p)
+                        :end_date (:date p)
+                        :week (:week p)
+                        :country (:country p)
+                        :series "area"}]))
+         (apply concat)))
+
 
 
   (defn ft-region-data
@@ -467,26 +546,43 @@
          (apply concat)))
 
 
+  (defn country-pop
+    [country]
+    (let [c (if (= country "UK")
+              "United Kingdom" country)]
+      (->> (slurp "resources/WorldPop.csv")
+           (csv/read-csv)
+           (sc/mappify)
+           (filter #(= (:Country %) c))
+           first
+           :Population
+           parse-int)))
 
 
   (def cdmx-data
     (->> weeks
-         (map (fn [w] (let [avg (year-avg [(:2016 w)
-                                           (:2017 w)
-                                           (:2018 w)
-                                           (if (and (>= (:week w) 10) (<= (:week w) 29))
+         (map (fn [w]
+                (let [avg
+                      (year-avg [(:2016 w)
+                                 (:2017 w)
+                                 (:2018 w)
+                                 (if (and (>= (:week w) 10)
+                                          (<= (:week w) 30))
                                              (:2019 w))])]
-                        [{:week (:week w) :count (:2020 w) :series "2020" :region "CDMX"}
-                         {:week (:week w) :series "expected" :count  avg :region "CDMX"}
-                         {:week (:week w) :area (:2020 w)  :series "area" :avgy avg :region "CDMX"}])))
+                  [{:week (:week w) :count (:2020 w) :series "2020"
+                    :region "CDMX"}
+                   {:week (:week w) :series "expected" :count  avg
+                    :region "CDMX"}
+                   {:week (:week w) :area (:2020 w)  :series "area" :avgy avg
+                    :region "CDMX"}])))
          (apply concat)
 
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
-                            (>= (:week %) 30))))
+                            (>= (:week %) 31))))
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 0))
-         (filter #(<= (:week %) 29))
+         (filter #(<= (:week %) 30))
          doall))
 
   ;; chart 6
@@ -503,7 +599,7 @@
              :week :count :series))
 
 
-  (def populations
+  (def populations-regions
     {"CDMX" 8918653
      "Guayas" 4327800
      "Lombardia region" 9911665
@@ -514,25 +610,81 @@
      "Lima"   9674755 ;; 2020 wikpedia
      "Ile-de-France" 12174880})
 
+  ;; https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
+  (def populations-nation
+    {"Spain" 47329981
+     "Italy" 60244639
+     "US" 330036464
+     "Brazil" 211857447
+     "Switzerland" 8619259
+     "Portugal" 10295909
+     "Austria" 8910696
+     "Norway" 5372355
+     "South Africa" 59622350
+     "Mexico" 127792286
+     "Germany" 83166711
+     "Chile" 19458310
+     "France" 67081000
+     "UK" 66796807
+     "Belgium" 11528375
+     "Ecuador" 17536492
+     "Peru" 32824358
+     "Sweden" 10348730})
+
+
+  (def back-to-expected
+    {"Spain" true
+     "Italy" true
+     "US" true
+     "Brazil" false ;; TODO unsure
+     "Switzerland" true
+     "Portugal" true
+     "Austria" true
+     "Norway" true
+     "South Africa" true
+     "Mexico" false
+     "Germany" true
+     "Chile" false
+     "France" true
+     "UK" true
+     "Belgium" true
+     "Ecuador" true ;; TODO unsure
+     "Peru" false
+     "Sweden" true})
 
   (defn xss-deaths
     [region-data start-week end-week]
-    (let [;;_ (println (:region (first region-data)))
+    (let [country (:country (first region-data))
           region (:region (first region-data))
           d (if (= start-week -1)
               region-data
-              (filter #(and (>= (:week %) start-week) (<= (:week %) end-week)) region-data))
+              (filter #(and (>= (:week %) start-week)
+                            (<= (:week %) end-week))
+                      region-data))
           d2020 (apply + (map :count
                               (filter #(= (:series %) "2020") d)))
           dexpected (apply + (map :count
                                   (filter #(= (:series %) "expected") d)))
           net (- d2020 dexpected)
-          xss-pop (* (/ net (get populations region)) 1000000.0)]
+          population (if country
+                       (country-pop country)
+                       (get populations-regions region))
+          xss-pop (* (/ net population) 1000000.0)]
       {:xss-net net
+       :back-to-expected (get back-to-expected country)
        :xss-pop xss-pop
-       :start-week start-week
-       :end-week end-week
-       :population (get populations region)
+       :start-week (if (= start-week -1)
+                     (:week (first region-data))
+                     start-week)
+       :end-week  (if (= start-week -1)
+                    (:week (last region-data))
+                    end-week)
+       :end-date (:end_date (last region-data))
+       :country country
+       :confirmed-deaths (if country
+                           (country-deaths
+                            country (:end_date (last region-data))))
+       :population population
        :region (:region (first region-data))
        :xss-pct (* 100.0 (- (/ d2020 dexpected) 1))}))
 
@@ -544,9 +696,11 @@
          (filter #(= (:year %) "2020"))
          (map :region)
          distinct
-         (filter #(not (contains? #{"Italy" "Spain" "St Petersburg" "US" "UK"
-                                    "England And Wales" "England" "Brazil" "Peru"
-                                    "Ecuador" "France" "Netherlands" "Chile"} %)))))
+         (filter #(not (contains?
+                        #{"Italy" "Spain" "St Petersburg" "US" "UK"
+                          "England And Wales" "England" "Brazil" "Peru"
+                          "Ecuador" "France" "Netherlands" "Chile"}
+                        %)))))
 
 
   (def x (map #(xss-deaths (ft-region-data ft-data %) -1 52)
@@ -554,18 +708,127 @@
 
 
   (def cities-xss
-    [(xss-deaths cdmx-data 14 29)
+    [(xss-deaths cdmx-data 14 30)
      (xss-deaths (ft-region-data ft-data "Guayas") 11 22)
-     (into (xss-deaths (ft-region-data ft-data "Lombardia region") 9 17) {:region "Lombardía"})
-     (into (xss-deaths (ft-region-data ft-data "London") 12 22) {:region "Londres"})
+     (into
+      (xss-deaths (ft-region-data ft-data "Lombardia region") 9 17)
+      {:region "Lombardía"})
+     (into
+      (xss-deaths (ft-region-data ft-data "London") 12 22)
+      {:region "Londres"})
      (xss-deaths (ft-region-data ft-data "Madrid") 11 20)
-     (into (xss-deaths (ft-region-data ft-data "New York City") 11 20) {:region "Nueva York (Ciudad)"})
-     (xss-deaths (ft-region-data ft-data "Metropolitana de Santiago") 18 27)
-     (xss-deaths (ft-region-data ft-data "Lima") 14 27)
+     (into (xss-deaths (ft-region-data ft-data "New York City") 11 20)
+           {:region "Nueva York (Ciudad)"})
+     (xss-deaths
+      (ft-region-data ft-data "Metropolitana de Santiago") 18 27)
+     (xss-deaths
+      (ft-region-data ft-data "Lima") 14 27)
      (into (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 22)
            {:region "Ile-de-France (región de París)"})])
 
-  (oz/view! (viz/cities-xss-table (reverse (sort-by :xss-pop cities-xss)))))
+  (oz/view! (viz/cities-xss-table (reverse (sort-by :xss-pop cities-xss))))
+
+  (def mx20
+    (let [;; published by ssa
+          xss-net 71315
+          ;;; conapo
+          population 84495868
+          ;; confirmed deaths reported on june 28
+          confirmed-deaths 20044]
+      {:xss-net xss-net,
+       :xss-pop (* (/ xss-net population) 1000000.0),
+       :start-week 16,
+       :end-week 26,
+       :confirmed-deaths confirmed-deaths,
+       :country "México (20 estados)",
+       :population population,
+       :back-to-expected false
+       :region nil}))
+
+  (def mxest
+    (let [;; covid deaths july 30 46,000
+          confirmed-deaths 46000
+          ;; covid deaths on june 28
+          ;;confirmed-deaths 26648
+          ;; 20 state factor * confirmed-deaths
+          xss-net (Math/round
+                   (* (/ (:xss-net mx20) (:confirmed-deaths mx20))
+                      confirmed-deaths 1.0))]
+      {:xss-net xss-net,
+       :xss-pop (* (/ xss-net
+                      (country-pop "Mexico")) 1000000.0),
+       :start-week 16,
+       :end-week 30,
+       :confirmed-deaths confirmed-deaths
+       :country "México (Estimación)",
+       :population (country-pop "Mexico"),
+       :back-to-expected false,
+       :region nil}))
+
+
+  (def brasil
+    {:xss-net 62491,
+     :xss-pop (* (/ 62491.0
+                    (country-pop "Brazil")) 1000000),
+     :start-week 12,
+     :end-week 23,
+     :confirmed-deaths 36455
+     :back-to-expected false
+     :country "Brasil",
+     :population (country-pop "Brazil"),
+     :region nil})
+
+  (def us
+    {:end-week 26,
+     :confirmed-deaths 124416,
+     :end-date "2020-05-23",
+     :start-week 13,
+     :xss-pop (* (/ 182406  (country-pop "US")) 1000000.0)
+     :region nil,
+     :back-to-expected false,
+     :population (country-pop "US"),
+     :xss-net 182406,
+     :country "Estados Unidos"})
+
+
+  (def countries-xss
+    [mxest
+     mx20
+     brasil
+     us
+     (xss-deaths (ft-country-data ft-data "Chile") 19 27)
+     (into (xss-deaths (ft-country-data ft-data "Spain") -1 20)
+           {:country "España"})
+     (into (xss-deaths (ft-country-data ft-data "Switzerland") -1 20)
+           {:country "Suiza"})
+     (xss-deaths (ft-country-data ft-data "Portugal") -1 20)
+     (into (xss-deaths (ft-country-data ft-data "Italy") -1 20)
+           {:country "Italia"})
+     (into (xss-deaths (ft-country-data ft-data "UK") -1 20)
+           {:country "Reino Unido"})
+     (into (xss-deaths (ft-country-data ft-data "France") -1 20)
+           {:country "Francia"})
+     (xss-deaths (ft-country-data ft-data "Peru") 15 27)
+     (xss-deaths (ft-country-data ft-data "Ecuador") 12 26)
+     (into (xss-deaths (ft-country-data ft-data "Germany") -1 20)
+           {:country "Alemania"})
+     (into (xss-deaths (ft-country-data ft-data "Belgium") -1 20)
+           {:country "Bélgica"})
+     (into (xss-deaths (ft-country-data ft-data "Sweden") -1 20)
+           {:country "Suecia"})
+     ])
+
+
+  (oz/view!
+   (viz/countries-xss-table (reverse (sort-by :xss-net countries-xss))))
+
+  (defn proportion
+    [p]
+    (/ (:confirmed-deaths p)
+       (:xss-net p)))
+
+  (oz/view!
+   (viz/covid-xss-table (reverse (sort-by proportion (rest countries-xss))))))
 
 
 
