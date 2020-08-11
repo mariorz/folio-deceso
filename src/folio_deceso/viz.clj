@@ -449,7 +449,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 30]}
+                           :scale {:domain [12, 32]}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true

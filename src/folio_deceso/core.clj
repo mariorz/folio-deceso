@@ -1,3 +1,4 @@
+
 (ns folio-deceso.core
   (:require [clj-time.format :as f]
             [clojure.data.csv :as csv]
@@ -37,6 +38,7 @@
 
 (comment
   (oz/start-server! 8888)
+  (def current-week 31)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -217,7 +219,8 @@
      "July/05/2020"
      "July/12/2020"
      "July/19/2020"
-     "July/26/2020"])
+     "July/26/2020"
+     "August/2/2020"])
 
 
   (def weeks2019
@@ -276,7 +279,7 @@
                            [(:2016 w)
                             (:2017 w)
                             (:2018 w)
-                            (if (and (>= (:week w) 10) (<= (:week w) 29))
+                            (if (and (>= (:week w) 10) (<= (:week w) current-week))
                               (:2019 w))])]
                   [{:week (:week w) :count (:2016 w) :year "2016"}
                    {:week (:week w) :count (:2017 w) :year "2017"}
@@ -287,9 +290,9 @@
                    {:week (:week w) :area (:2020 w) :year "area" :avgy avg}])))
          (apply concat)
          (filter #(or (not= (:year %) "2019")
-                      (and (>= (:week %) 10) (<= (:week %) 30))))
+                      (and (>= (:week %) 10) (<= (:week %) current-week))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
-                            (>= (:week %) 31))))
+                            (>= (:week %) (+ current-week 1)))))
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
@@ -298,13 +301,13 @@
 
 
   (def deaths-week-2020
-    (apply + (map :count (filter #(and (<= (:week %) 30)
+    (apply + (map :count (filter #(and (<= (:week %) current-week)
                                        (>= (:week %) 14)
                                        (= (:year %) "2020"))
                                  weekly-chart-data))))
 
   (def deaths-week-avg
-    (apply + (map :count (filter #(and (<= (:week %) 30)
+    (apply + (map :count (filter #(and (<= (:week %) current-week)
                                        (>= (:week %) 14)
                                        (= (:year %) "Promedio"))
                                  weekly-chart-data))))
@@ -334,7 +337,8 @@
      27 "5 julio"
      28 "12 julio"
      29 "19 julio"
-     30 "26 julio"})
+     30 "26 julio"
+     31 "2 agosto"})
 
 
 
@@ -357,7 +361,8 @@
      "07/05/2020" 27
      "07/12/2020" 28
      "07/19/2020" 29
-     "07/26/2020" 30))
+     "07/26/2020" 30
+     "08/02/2020" 31))
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -393,16 +398,16 @@
             :count (- (:count week2020) (:count weekavg))
             :year "Excedente 2020"})
          (filter #(= (:year %) "2020")
-                 (filter #(and (<= (:week %) 30)
+                 (filter #(and (<= (:week %) current-week)
                                (>= (:week %) 10)) weekly-chart-data))
          (filter #(= (:year %) "Promedio")
-                 (filter #(and (<= (:week %) 30)
+                 (filter #(and (<= (:week %) current-week)
                                (>= (:week %) 10)) weekly-chart-data))))
 
 
   (def weekly-avg
     (filter #(= (:year %) "Promedio")
-            (filter #(and (<= (:week %) 30)
+            (filter #(and (<= (:week %) current-week)
                           (>= (:week %) 10)) weekly-chart-data)))
 
   (def weekly-xss-pct
@@ -437,11 +442,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on aug 2
-  ;; with fecha_def at or before july 26
+  ;; from db published on aug 9
+  ;; with fecha_def at or before aug 2
   (def total-items
-    (let [confirmed (- 8837 15) ;; 15 confirmed before week 12
-          suspects 850]
+    (let [confirmed (- 9173 15) ;; 15 confirmed before week 12
+          suspects 717]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -567,7 +572,7 @@
                                  (:2017 w)
                                  (:2018 w)
                                  (if (and (>= (:week w) 10)
-                                          (<= (:week w) 30))
+                                          (<= (:week w) current-week))
                                              (:2019 w))])]
                   [{:week (:week w) :count (:2020 w) :series "2020"
                     :region "CDMX"}
@@ -578,11 +583,11 @@
          (apply concat)
 
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
-                            (>= (:week %) 31))))
+                            (>= (:week %) (+ current-week 1)))))
          (filter #(not (and (or (= (:series %) "2020") (= (:series %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 0))
-         (filter #(<= (:week %) 30))
+         (filter #(<= (:week %) current-week))
          doall))
 
   ;; chart 6
@@ -636,7 +641,7 @@
     {"Spain" true
      "Italy" true
      "US" true
-     "Brazil" false ;; TODO unsure
+     "Brazil" false
      "Switzerland" true
      "Portugal" true
      "Austria" true
@@ -648,7 +653,7 @@
      "France" true
      "UK" true
      "Belgium" true
-     "Ecuador" true ;; TODO unsure
+     "Ecuador" true
      "Peru" false
      "Sweden" true})
 
@@ -708,7 +713,7 @@
 
 
   (def cities-xss
-    [(xss-deaths cdmx-data 14 30)
+    [(xss-deaths cdmx-data 14 current-week)
      (xss-deaths (ft-region-data ft-data "Guayas") 11 22)
      (into
       (xss-deaths (ft-region-data ft-data "Lombardia region") 9 17)
