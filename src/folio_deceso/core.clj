@@ -38,7 +38,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 31)
+  (def current-week 32)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -220,7 +220,8 @@
      "July/12/2020"
      "July/19/2020"
      "July/26/2020"
-     "August/2/2020"])
+     "August/2/2020"
+     "August/9/2020"])
 
 
   (def weeks2019
@@ -338,7 +339,8 @@
      28 "12 julio"
      29 "19 julio"
      30 "26 julio"
-     31 "2 agosto"})
+     31 "2 agosto"
+     32 "9 agosto"})
 
 
 
@@ -362,7 +364,8 @@
      "07/12/2020" 28
      "07/19/2020" 29
      "07/26/2020" 30
-     "08/02/2020" 31))
+     "08/02/2020" 31
+     "08/09/2020" 32))
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -442,11 +445,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on aug 9
-  ;; with fecha_def at or before aug 2
+  ;; from db published on aug 13
+  ;; with fecha_def at or before aug 9
   (def total-items
-    (let [confirmed (- 9173 15) ;; 15 confirmed before week 12
-          suspects 717]
+    (let [confirmed (- 9585 15) ;; 15 confirmed before week 12
+          suspects 903]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
