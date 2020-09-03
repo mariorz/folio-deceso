@@ -451,7 +451,7 @@
 
   ;; values for confirmados and sospechosos
   ;; from db published on aug 30
-  ;; with fecha_def at or before aug 26
+  ;; with fecha_def at or before aug 23
   (def total-items
     (let [confirmed (- 10301 15) ;; 15 confirmed before week 12
           suspects 842]
