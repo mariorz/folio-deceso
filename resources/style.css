@@ -146,7 +146,7 @@ table.cities-xss tbody tr td:first-child {
     border-bottom: 1px solid #202020;
 }
 
-table.cities-xss tbody:nth-child(3) {
+table.cities-xss tbody:nth-child(2) {
     
     background-color:pink;
     

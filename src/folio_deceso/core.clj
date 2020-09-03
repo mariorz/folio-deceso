@@ -38,7 +38,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 32)
+  (def current-week 34)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -141,7 +141,8 @@
 
   (def month-numbers-2020
     {1 "Jan/31/2020" 2 "Feb/28/2020" 3 "Mar/31/2020" 4 "Apr/30/2020"
-     4.5 "May/20/2020" 5 "May/31/2020" 6 "June/30/2020" 7 "July/30/2020"})
+     4.5 "May/20/2020" 5 "May/31/2020" 6 "June/30/2020" 7 "July/30/2020"
+     8 "Aug/30/2020"})
 
 
   (defn homogenize-year
@@ -340,7 +341,9 @@
      29 "19 julio"
      30 "26 julio"
      31 "2 agosto"
-     32 "9 agosto"})
+     32 "9 agosto"
+     33 "16 agosto"
+     34 "23 agosto"})
 
 
 
@@ -365,7 +368,9 @@
      "07/19/2020" 29
      "07/26/2020" 30
      "08/02/2020" 31
-     "08/09/2020" 32))
+     "08/09/2020" 32
+     "08/16/2020" 33
+     "08/23/2020" 34))
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -445,11 +450,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on aug 13
-  ;; with fecha_def at or before aug 9
+  ;; from db published on aug 30
+  ;; with fecha_def at or before aug 26
   (def total-items
-    (let [confirmed (- 9585 15) ;; 15 confirmed before week 12
-          suspects 903]
+    (let [confirmed (- 10301 15) ;; 15 confirmed before week 12
+          suspects 842]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -459,8 +464,7 @@
   (oz/view! (viz/chart4-bar-chart total-items :cat :count))
 
 
-
-  (def ft-data
+  (def ftdata
     (slurp (str "https://raw.githubusercontent.com/"
                 "Financial-Times/coronavirus-excess-mortality-data/master/"
                 "data/ft_excess_deaths.csv")))
@@ -593,15 +597,94 @@
          (filter #(<= (:week %) current-week))
          doall))
 
+  (defn make-week-map
+    [region  week end-date count-2020 count-expected]
+    [{:count count-2020,
+     :end_date end-date,
+     :region region,
+     :week week,
+     :series "2020"}
+    {:count count-expected,
+     :end_date end-date,
+     :week week,
+     :region region,
+     :series "expected"}
+    {:area count-2020,
+     :avgy count-expected,
+     :end_date end-date,
+     :week week,
+     :region region,
+     :series "area"}])
+
+
+  (def lima-gov
+    (->>
+     (slurp "resources/peru.csv")
+     (csv/read-csv)
+     (filter #(= (first %) "LIMA"))
+     (map (fn [r] {:region (first r)
+                   :week (edn/read-string (second r))
+                   :count-expected (edn/read-string (nth r 2))
+                   :count-2020 (edn/read-string (nth r 3))}))
+     (drop-while #(> (:week %) 14))
+     (take-while #(<= (:week %) 31))
+     (map (fn [r] (make-week-map
+                   "Lima" (:week r) "na" (:count-2020 r) (:count-expected r))))
+     (apply concat)))
+
+
+  (def lombardia-gov
+    (->>
+     (slurp "resources/lombardia.csv")
+     (csv/read-csv)
+     (sc/remove-comments)
+     (map (fn [r] {:region "Lombardia region"
+                   :week (edn/read-string (first r))
+                   :count-expected (edn/read-string (nth r 2))
+                   :count-2020 (edn/read-string (nth r 1))}))
+     (drop 1)
+     (drop-while #(> (:week %) 14))
+     (take-while #(<= (:week %) 26))
+     (map (fn [r] (make-week-map
+                   "Lombardia region" (:week r) "na" (:count-2020 r) (:count-expected r))))
+     (apply concat)))
+
+
+  (def santiago-economist
+    (->>
+     (slurp (str "https://raw.githubusercontent.com/"
+                 "TheEconomist/covid-19-excess-deaths-tracker/master/"
+                 "output-data/excess-deaths/chile_excess_deaths.csv"))
+     (csv/read-csv)
+     (sc/remove-comments)
+     (sc/mappify)
+     (filter #(= (:region %) "Santiago Metropolitan"))
+     (map (fn [r]
+            {:region "Metropolitana de Santiago"
+             :week (edn/read-string (:week r))
+             :count-expected (edn/read-string (:expected_deaths r))
+             :count-2020 (edn/read-string (:total_deaths r))}))
+     (drop-while #(> (:week %) 18))
+     (take-while #(<= (:week %) 34))
+     (map (fn [r] (make-week-map
+                   "Metropolitana de Santiago" (:week r) "na" (:count-2020 r) (:count-expected r))))
+     (apply concat)))
+
+
+
+
   ;; chart 6
   (oz/view! (viz/multi-weekly-line-plot
              (concat (ft-region-data ft-data "New York City")
                      (ft-region-data ft-data "Guayas")
                      (ft-region-data ft-data "London")
                      (ft-region-data ft-data "Ile-de-France")
-                     (ft-region-data ft-data "Metropolitana de Santiago")
-                     (ft-region-data ft-data "Lima")
-                     (ft-region-data ft-data "Lombardia region")
+                     #_(ft-region-data ft-data "Metropolitana de Santiago")
+                     santiago-economist
+                     #_(ft-region-data ft-data "Lima")
+                     lima-gov
+                     #_(ft-region-data ft-data "Lombardia region")
+                     lombardia-gov
                      (ft-region-data ft-data "Madrid")
                      cdmx-data)
              :week :count :series))
@@ -730,7 +813,8 @@
      (xss-deaths
       (ft-region-data ft-data "Metropolitana de Santiago") 18 27)
      (xss-deaths
-      (ft-region-data ft-data "Lima") 14 27)
+      lima-gov
+      #_(ft-region-data ft-data "Lima") 14 31)
      (into (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 22)
            {:region "Ile-de-France (región de París)"})])
 
