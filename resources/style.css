@@ -142,11 +142,11 @@ table.cities-xss tbody tr td:first-child {
     text-align:left;
     width: 200px;
     ;;font-weight:bold;
-    ;;background-color:none;
+    #background-color:none;
     border-bottom: 1px solid #202020;
 }
 
-table.cities-xss tbody:nth-child(2) {
+table.cities-xss tbody:nth-child(3) {
     
     background-color:pink;
     

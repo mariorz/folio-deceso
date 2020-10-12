@@ -15,18 +15,20 @@
                   :title nil}
               :y {:field y-key :type "quantitative"
                   :title nil
+                  :scale {:domain [0, 100000]}
                   :axis {}}
               :strokeDash {:field :predicted :type "nominal" :title nil
                            :legend nil}
               :color {:field z-key
                       :type "nominal"
-                      :scale {:domain ["2016" "2017" "2018" "2019" "2020"]
+                      :scale {:domain ["2016" "2017" "2018" "2019" "2020" "2020-adip"]
                               :range ["lightgray" "lightgray""lightgray"
-                                      "lightgray" "crimson"]}
+                                      "lightgray" "crimson" "green"]}
                       :title nil}}
    :mark {:type "line" :point false}
    :config {:axis {:grid true}
-            :backgrounr "white"}})
+            ;;:backgrounr "white"
+            :background "white" #_"#fcf8e8"}})
 
 
 
@@ -449,7 +451,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 32]}
+                           :scale {:domain [12, 38]}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true
