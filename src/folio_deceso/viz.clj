@@ -8,6 +8,10 @@
    :height 400
    :encoding {:x {:field x-key
                   :type "temporal"
+                  :scale {;;:domain ["Apr/10/2020", "Dec/06/2020"]
+                          :nice false
+                          :clamp true}
+
                   :axis {:format "%b"
                          :tickBand "extent"
                          :tickCount 12
@@ -15,7 +19,7 @@
                   :title nil}
               :y {:field y-key :type "quantitative"
                   :title nil
-                  :scale {:domain [0, 100000]}
+                  :scale {:domain [0, 130000]}
                   :axis {}}
               :strokeDash {:field :predicted :type "nominal" :title nil
                            :legend nil}
@@ -88,7 +92,7 @@
 (defn grouped-bar-chart-diff
   [data-points x-key y-key z-key]
   {:data {:values data-points}
-   :width 1000
+   :width 1400
    :height 500
    :encoding {:x {:field x-key
                   :type "ordinal"
@@ -127,7 +131,7 @@
 (defn grouped-bar-chart-diff-p
   [data-points x-key y-key z-key]
   {:data {:values data-points}
-   :width 800
+   :width 1200
    :height 500
    :encoding {:x {:field x-key :type "ordinal"
                   :title nil
@@ -188,6 +192,7 @@
                    :fontWeight "bold"}}]
    :config {:axis {:grid true, :tickBand "extent"}
             :background "white"
+            ;;:background "#fcf8e8"
             :color "crimson"}})
 
 
@@ -435,8 +440,7 @@
                                :legend nil
                                :title nil}}}]
    :config {:axis {}
-            ;; :background "#fcf8e8"
-            :background "white"}})
+            :background "white" #_"#fcf8e8"}})
 
 
 (defn chart-stacked-cofirmed-xss
@@ -451,7 +455,9 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 38]}
+                           :scale {:domain [12, 51]
+                                   :nice false
+                                   :clamp true}
                            :axis {;;:tickBand "extent"
                                   :grid false
                                   :domain true
@@ -474,8 +480,9 @@
                                         :labelFontSize 14}
                                :title "Serie"}}}]
    :config {:axis {}
-            ;; :background "#fcf8e8"
-            :background "white"}})
+            :background "#fff"
+            ;;:background "#fcf8e8"
+            }})
 
 
 
@@ -592,5 +599,34 @@
                                       :legend nil
                                       :title nil}}}]}
    :config {:axis {}
-            ;; :background "#fcf8e8"
+            :background "#fff"}})
+
+
+
+
+
+(defn adip-audit-line-plot
+  [data-points x-key y-key]
+  {:data {:values data-points}
+   :width 600
+   :height 300
+   :encoding {:x {:field x-key
+                  :type "temporal"
+                  :axis {:format "%b"
+                         :tickBand "extent"
+                         :tickCount 12
+                         :grid false
+                         :labelFlush "10"}
+                  :title "Fecha de Defunción"}
+              :y {:field y-key :type "quantitative"
+                  :title "Fallecimientos"
+                  :axis {:tickCount 6
+                         :grid true
+                         :labelFlush "10"}}
+              :strokeDash {:field :predicted :type "nominal" :title nil
+                           :legend nil}
+             }
+   :mark {:type "line" :point false}
+   ;;:resolve {:scale {:y "independent"}}
+   :config {:axis {}
             :background "white"}})
