@@ -38,7 +38,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 51)
+  (def current-week 52)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -248,7 +248,8 @@
      "November/29/2020"
      "December/6/2020"
      "December/13/2020"
-     "December/20/2020"])
+     "December/20/2020"
+     "December/27/2020"])
 
   (def week-dates-adip
     ["January/5/2020"
@@ -301,7 +302,8 @@
      "November/29/2020"
      "December/6/2020"
      "December/13/2020"
-     "December/20/2020"])
+     "December/20/2020"
+     "December/27/2020"])
 
 
   #_(def weeks2019
@@ -460,7 +462,8 @@
      48 "29 noviembre"
      49 "6 diciembre"
      50 "13 diciembre"
-     51 "20 diciembre"})
+     51 "20 diciembre"
+     52 "27 diciembre"})
 
 
 
@@ -504,7 +507,8 @@
      "11/29/2020" 48
      "12/06/2020" 49
      "12/13/2020" 50
-     "12/20/2020" 51))
+     "12/20/2020" 51
+     "12/27/2020" 52))
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -584,11 +588,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on jan 5
-  ;; with fecha_def at or before dec 20
+  ;; from db published on jan 14
+  ;; with fecha_def at or before dec 27
   (def total-items
-    (let [confirmed (- 20623 15) ;; 15 confirmed before week 12
-          suspects 5479]
+    (let [confirmed (- 21848 15) ;; 15 confirmed before week 12
+          suspects 5632]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}

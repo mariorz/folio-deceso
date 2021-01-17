@@ -19,7 +19,7 @@
                   :title nil}
               :y {:field y-key :type "quantitative"
                   :title nil
-                  :scale {:domain [0, 130000]}
+                  :scale {:domain [0, 140000]}
                   :axis {}}
               :strokeDash {:field :predicted :type "nominal" :title nil
                            :legend nil}
@@ -392,7 +392,7 @@
                        :y {:field y-key
                            :axis {:grid true}
                            :type "quantitative"
-                           :scale {:domain [1000,4500]}
+                           :scale {:domain [1000,5500]}
                            :title "Decesos semanales"}
                        :color
                        {:field z-key
@@ -455,7 +455,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 51]
+                           :scale {:domain [12, 52]
                                    :nice false
                                    :clamp true}
                            :axis {;;:tickBand "extent"
