@@ -8,13 +8,13 @@
    :height 400
    :encoding {:x {:field x-key
                   :type "temporal"
-                  :scale {;;:domain ["Apr/10/2020", "Dec/06/2020"]
+                  :scale {:domain ["Jan/01/2020", "Jan/10/2021"]
                           :nice false
                           :clamp true}
 
                   :axis {:format "%b"
                          :tickBand "extent"
-                         :tickCount 12
+                         :tickCount 14
                          :labelFlush "10"}
                   :title nil}
               :y {:field y-key :type "quantitative"
@@ -107,7 +107,7 @@
                   :title nil
                   :axis {:tickCount 10
                          :labelFontSize 15}}
-              :text {:field y-key :type "quantitative" :format ","}
+              :text {:field y-key :type "quantitative" :format ",.0f"}
               :column {:field z-key :type "ordinal" :spacing 10
                        :label nil
                        :labels nil
@@ -117,8 +117,10 @@
            {:mark {:type "text"
                    :fontSize 14
                    :align "center"
-                   :baseline "bottom"
-                   :dy -23
+                   :baseline "top"
+                   :angle 270
+                   :dy -5
+                   :dx 32
                    :fontWeight "bold"
                    :color "black"}}]
    :config {:views {:stroke "transparent"}
@@ -376,13 +378,13 @@
   {:data {:values data-points}
    :width 900
    :height 400
-   :layer [{:mark {:type "line"
+   :layer [ {:mark {:type "line"
                    :point false
                    :interpolate "linear"}
             :encoding {:x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [10 , 52]
+                           :scale {:domain [10 , 53]
                                    :nice false
                                    ;;:range [10, 52]
                                    :tickMinStep 1}
@@ -392,7 +394,7 @@
                        :y {:field y-key
                            :axis {:grid true}
                            :type "quantitative"
-                           :scale {:domain [1000,5500]}
+                           :scale {:domain [1000,6000]}
                            :title "Decesos semanales"}
                        :color
                        {:field z-key
@@ -438,10 +440,53 @@
                                :scale {:domain ["area"]
                                        :range ["crimson"]}
                                :legend nil
-                               :title nil}}}]
+                               :title nil}}}
+           {:mark {:type "rule" :color "gray" :size 1
+                   :strokeDash [4 4]}
+            :encoding {:x {:field "week" :type "quantitative"}}
+            :data {:values [{:week 48.14}]}}
+
+           {:mark {:type "rule" :color "crimson" :size 1
+                   :strokeDash [4 4]}
+            :encoding {:x {:field "week" :type "quantitative"}}
+            :data {:values [{:week 50.85}
+                            {:week 12.14}]}}
+           {:mark {:type "rule" :color "#c65102" :size 1
+                   :strokeDash [4 4]}
+            :encoding {:x {:field "week" :type "quantitative"}}
+            :data {:values [{:week 26.14}]}}
+           {:mark {:type "point" :color "black" :size 75
+                   :shale "circle" :filled true}
+            :encoding {:x {:field "week" :type "quantitative"}
+                       :y {:field "val" :type "quantitative"}}
+            :data {:values [{:week 50.85 :val 4200}
+                            {:week 26.14 :val 2730}
+                            {:week 12.15 :val 1430}
+                            {:week 48.14 :val 2900}]}}
+           {:mark {:type "text" :color "gray" :angle 270
+                   :dy -5 :fontSize 12 ;;:fontStyle "regular"
+                   :fontWeight 600
+                   :align "right"
+                   :baseline "bottom"
+                   :dx 195}
+            :encoding {:x {:field "week" :type "quantitative"}
+                       :text {:field "val" :type "nominal"}}
+            :data {:values [{:week 50.85 :val "Inicio semáforo rojo"}
+                            {:week 26.14 :val "Fin Jornada Nacional de Sana Distancia"}
+                            {:week 12.15 :val "Inicio Jornanda Nacional de Sana Distancia"}
+                            {:week 48.14 :val "Indicaodres para semáforo rojo"}]}}
+           ]
    :config {:axis {}
             :background "white" #_"#fcf8e8"}})
 
+
+;; red light 1 starts march 23
+;; https://www.elfinanciero.com.mx/nacional/jornada-nacional-de-sana-distancia-acaba-el-30-de-mayo-aunque-aun-habra-restricciones-confirma-lopez-gatell
+;; red light 1 ends june 29
+;; https://adip.cdmx.gob.mx/comunicacion/nota/la-ciudad-de-mexico-pasa-semaforo-naranja
+;; red light 2 should have started nov 30
+;; red light 2 starts dec 19
+;; https://www.animalpolitico.com/2020/12/cdmx-y-edomex-cierran-actividades-no-esenciales-semaforo-rojo/
 
 (defn chart-stacked-cofirmed-xss
   [data-points x-key y-key z-key]
@@ -455,7 +500,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 52]
+                           :scale {:domain [12, 53]
                                    :nice false
                                    :clamp true}
                            :axis {;;:tickBand "extent"
@@ -466,7 +511,7 @@
                            :axis {:grid true}
                            :sort ["Decesos confirmados" "Excedente 2020"]
                            :type "quantitative"
-                           :scale {:domain [0,3500]}
+                           :scale {:domain [0,4500]}
                            :title "Decesos semanales"}
                        :color {:field z-key
                                :type "nominal"

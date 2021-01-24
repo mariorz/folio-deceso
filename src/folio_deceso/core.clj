@@ -1,4 +1,3 @@
-
 (ns folio-deceso.core
   (:require [clj-time.format :as f]
             [clojure.data.csv :as csv]
@@ -38,7 +37,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 52)
+  (def current-week 53)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -249,7 +248,8 @@
      "December/6/2020"
      "December/13/2020"
      "December/20/2020"
-     "December/27/2020"])
+     "December/27/2020"
+     "January/3/2021"])
 
   (def week-dates-adip
     ["January/5/2020"
@@ -303,7 +303,8 @@
      "December/6/2020"
      "December/13/2020"
      "December/20/2020"
-     "December/27/2020"])
+     "December/27/2020"
+     "January/3/2021"])
 
 
   #_(def weeks2019
@@ -322,10 +323,12 @@
 
 
   (def weeks2020
-    (map (fn [date count]
-           {:date date :count count :year "2020" :predicted false})
-         week-dates
-         (filter #(> % 0) (map :2020-accum weeks))))
+    (concat
+     (map (fn [date count]
+            {:date date :count count :year "2020" :predicted false})
+          (butlast week-dates)
+          (filter #(> % 0) (map :2020-accum (butlast weeks))))
+     [{:date (last week-dates) :count (:2020-accum (last weeks)) :year "2020" :predicted false}]))
 
 
   (def weeks2020-adip
@@ -400,7 +403,7 @@
          (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
-         (filter #(<= (:week %) 52))
+         (filter #(<= (:week %) 53))
          doall))
 
 
@@ -463,52 +466,54 @@
      49 "6 diciembre"
      50 "13 diciembre"
      51 "20 diciembre"
-     52 "27 diciembre"})
+     52 "27 diciembre"
+     53 "3 enero"})
 
 
 
   (def weekly-dates
-    (sorted-map
-     "03/29/2020" 13
-     "04/05/2020" 14
-     "04/12/2020" 15
-     "04/19/2020" 16
-     "04/26/2020" 17
-     "05/03/2020" 18
-     "05/10/2020" 19
-     "05/17/2020" 20
-     "05/24/2020" 21
-     "05/31/2020" 22
-     "06/07/2020" 23
-     "06/14/2020" 24
-     "06/21/2020" 25
-     "06/28/2020" 26
-     "07/05/2020" 27
-     "07/12/2020" 28
-     "07/19/2020" 29
-     "07/26/2020" 30
-     "08/02/2020" 31
-     "08/09/2020" 32
-     "08/16/2020" 33
-     "08/23/2020" 34
-     "08/30/2020" 35
-     "09/06/2020" 36
-     "09/13/2020" 37
-     "09/20/2020" 38
-     "09/27/2020" 39
-     "10/04/2020" 40
-     "10/11/2020" 41
-     "10/18/2020" 42
-     "10/25/2020" 43
-     "11/01/2020" 44
-     "11/08/2020" 45
-     "11/15/2020" 46
-     "11/22/2020" 47
-     "11/29/2020" 48
-     "12/06/2020" 49
-     "12/13/2020" 50
-     "12/20/2020" 51
-     "12/27/2020" 52))
+    [
+     "03/29/2020" #_13
+     "04/05/2020" #_14
+     "04/12/2020" #_15
+     "04/19/2020" #_16
+     "04/26/2020" #_17
+     "05/03/2020" #_18
+     "05/10/2020" #_19
+     "05/17/2020" #_20
+     "05/24/2020" #_21
+     "05/31/2020" #_22
+     "06/07/2020" #_23
+     "06/14/2020" #_24
+     "06/21/2020" #_25
+     "06/28/2020" #_26
+     "07/05/2020" #_27
+     "07/12/2020" #_28
+     "07/19/2020" #_29
+     "07/26/2020" #_30
+     "08/02/2020" #_31
+     "08/09/2020" #_32
+     "08/16/2020" #_33
+     "08/23/2020" #_34
+     "08/30/2020" #_35
+     "09/06/2020" #_36
+     "09/13/2020" #_37
+     "09/20/2020" #_38
+     "09/27/2020" #_39
+     "10/04/2020" #_40
+     "10/11/2020" #_41
+     "10/18/2020" #_42
+     "10/25/2020" #_43
+     "11/01/2020" #_44
+     "11/08/2020" #_45
+     "11/15/2020" #_46
+     "11/22/2020" #_47
+     "11/29/2020" #_48
+     "12/06/2020" #_49
+     "12/13/2020" #_50
+     "12/20/2020" #_51
+     "12/27/2020" #_52
+     "01/03/2021" #_53])
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -523,7 +528,7 @@
 
   (def cdmx-confirmed-weekly-deaths-accum
     (map (comp parse-int #(get cdmx-confirmed-deaths (keyword %)))
-         (map mxts-format (keys weekly-dates))))
+         (map mxts-format (identity weekly-dates))))
 
 
   (def cdmx-confirmed-weekly-deaths
@@ -534,7 +539,8 @@
   (def weekly-confirmed
     (map (fn [week count]
            {:week week :count count :year "Decesos confirmados"})
-         (vals weekly-dates)
+         #_(vals weekly-dates)
+         (range 13 54)
          (concat [0] cdmx-confirmed-weekly-deaths)))
 
 
@@ -542,6 +548,12 @@
     (map (fn [week2020 weekavg]
            {:week (:week week2020)
             :count (- (:count week2020) (:count weekavg))
+            :week-title
+            (str "Semana "
+                 (:week week2020)
+                 " ("
+                 (get weekly-titles (:week week2020))
+                 ")")
             :year "Excedente 2020"})
          (filter #(= (:year %) "2020")
                  (filter #(and (<= (:week %) current-week)
@@ -575,7 +587,7 @@
 
   ;; net bar chart (unpublished)
     (oz/view!
-     (viz/grouped-bar-chart-diff weekly-xss :week :count :year))
+     (viz/grouped-bar-chart-diff weekly-xss :week-title :count :year))
 
 
 
@@ -588,11 +600,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on jan 14
-  ;; with fecha_def at or before dec 27
+  ;; from db published on jan 20
+  ;; with fecha_def at or before jan 3
   (def total-items
-    (let [confirmed (- 21848 15) ;; 15 confirmed before week 12
-          suspects 5632]
+    (let [confirmed (- 23198 15) ;; 15 confirmed before week 12
+          suspects 5662]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -671,7 +683,8 @@
     (->> bulk-data
          (csv/read-csv)
          (sc/mappify)
-         (filter #(= (:year %) "2020"))
+         (filter #(or (= (:year %) "2020")
+                      (= (:year %) "2021")))
          (filter #(= (:region %) region))
          (sc/cast-with {:week parse-int
                         :excess_deaths parse-int
@@ -1110,7 +1123,7 @@
       (str month "/" day "/" year)))
 
   (def adip-data
-    (with-open [in-file (io/reader "resources/data-adip-dic10.csv")]
+    (with-open [in-file (io/reader "resources/data-adip-ene16.csv")]
       (->> (csv/read-csv in-file)
            (sc/remove-comments)
            (sc/mappify)
