@@ -37,7 +37,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 53)
+  (def current-week 57)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -129,6 +129,13 @@
      (f/formatter "MM/dd/2020")
      (f/parse (f/formatter "dd/MM/yyyy") s)))
 
+  (defn parse-year
+    [s]
+    (f/unparse
+     (f/formatter "MM/dd/yyyy")
+     (f/parse (f/formatter "dd/MM/yyyy") s)))
+
+
   (def inegi-days
     (with-open [in-file (io/reader "resources/inegi-days.csv")]
       (->>
@@ -140,31 +147,26 @@
                       :accum parse-int
                       :accum-week parse-int
                       :new parse-int
-                      :last-doy parse-int
-                      :date homogenize-year})
+                      :last-dow parse-int
+                      :date parse-year})
        (map #(into % {:predicted false :count (:accum %)}))
        doall)))
 
 
+  ;; new
   (def inegi2016
-    (concat
-     (drop-last
-      1 (filter #(and (= (:year %) "2016") (= (:last-doy %) 1)) inegi-days))
-     [(last (drop-last 1 (filter #(= (:year %) "2016") inegi-days)))]))
+    (filter #(and (= (:year %) "2016") (= (:last-dow %) 1)) inegi-days))
 
   (def inegi2017
-    (filter #(and (= (:year %) "2017") (= (:last-doy %) 1)) inegi-days))
+    (filter #(and (= (:year %) "2017") (= (:last-dow %) 1)) inegi-days))
 
   (def inegi2018
-    (concat
-     (drop-last
-      1 (filter #(and (= (:year %) "2018") (= (:last-doy %) 1)) inegi-days))
-     [(last (filter #(= (:year %) "2018") inegi-days))]))
+    (filter #(and (= (:year %) "2018") (= (:last-dow %) 1)) inegi-days))
 
   (def inegi2019
-    (concat
-     (filter #(and (= (:year %) "2019") (= (:last-doy %) 1)) inegi-days)
-     [(last (filter #(= (:year %) "2019") inegi-days))]))
+    (filter #(and (= (:year %) "2019") (= (:last-dow %) 1)) inegi-days))
+
+
 
 
   (def weeks
@@ -178,6 +180,7 @@
                           :2018 parse-int
                           :2019 parse-int
                           :2020 parse-int
+                          :2021 parse-int
                           :2019-accum parse-int
                           :2020-accum parse-int}))))
 
@@ -203,6 +206,7 @@
                              :2020-accum-adip (:2020-accum wa)}))
          weeks
          weeks-adip))
+
 
   (def week-dates
     ["March/1/2020"
@@ -250,6 +254,8 @@
      "December/20/2020"
      "December/27/2020"
      "January/3/2021"])
+
+
 
   (def week-dates-adip
     ["January/5/2020"
@@ -307,6 +313,14 @@
      "January/3/2021"])
 
 
+  (def week-dates-2021
+    ["January/10/2021"
+     "January/17/2021"
+     "January/24/2021"
+     "January/31/2021"])
+
+
+
   #_(def weeks2019
     (map (fn [date count]
            {:date date :count count :year "2019" :predicted false})
@@ -314,21 +328,18 @@
          (filter #(> % 0) (map :2019-accum weeks))))
 
 
-  #_(def weeks2019
-    (map (fn [date count]
-           {:date date :count count :year "2019" :predicted false})
-         (conj week-dates-adip "December/27/2020")
-         (map :2019-accum weeks)))
 
+ (def weeks2020
+   (map (fn [date count]
+          {:date date :count count :year "2020" :predicted false })
+        week-dates-adip
+        (filter #(> % 0) (map :2020 (butlast weeks)))))
 
-
-  (def weeks2020
-    (concat
-     (map (fn [date count]
-            {:date date :count count :year "2020" :predicted false})
-          (butlast week-dates)
-          (filter #(> % 0) (map :2020-accum (butlast weeks))))
-     [{:date (last week-dates) :count (:2020-accum (last weeks)) :year "2020" :predicted false}]))
+ (def weeks2021
+   (map (fn [date count]
+           {:date date :count count :year "2021" :predicted false })
+         week-dates-2021
+         (filter #(> % 0) (map :2021 (identity weeks)))))
 
 
   (def weeks2020-adip
@@ -338,32 +349,32 @@
          (filter #(> % 0) (map :2020-accum weeks-adip))))
 
 
-
-  (def accumulated-points
+  (def all-points
     (concat
      inegi2016
      inegi2017
      inegi2018
      inegi2019
      weeks2020
-     weeks2020-adip
-     #_(map (fn [x] (into x {:predicted false
-                           :date (get month-numbers-2019 (:month x))}))
-          (filter #(<= (:month %) 1)  months2019))
-     (map (fn [x] (into x {:date (get month-numbers-2020 (:month x))}))
-          (filter #(< (:month %) 1) months2020))
-     #_[{:year "2019", :count 0, :date "Jan/1/2020"
-       :predicted false}
-      {:year "2019" :date "Dec/31/2020"
-       :count (apply + (map :count cy2019c))}]
-     [{:year "2020",
-       :count 0, :date "Jan/1/2020" :predicted false}]))
+     weeks2021))
 
+
+  (def week-points
+    (map (fn [current prev]
+           (into current {:week-count
+                          (if (not (contains? #{"2020" "2021"} (:year current)))
+                            (:accum-week current)
+                            (if (= (:date current) "January/5/2020")
+                              (+ (:count current) ;; adds last 2 days from 2019
+                                 (apply + (map :new (take-last 2 inegi-days))))
+                              (:count current) ))}))
+         (rest all-points)
+         all-points))
 
 
 
   ;;; Chart 1 (time series)
-  (oz/view! (viz/chart1-line-plot accumulated-points :date :count :year))
+  (oz/view! (viz/chart1-new-line-plot week-points :date :week-count :year))
 
 
   (defn year-avg
@@ -391,19 +402,27 @@
                    {:week (:week w) :count (:2017 w) :year "2017"}
                    {:week (:week w) :count (:2018 w) :year "2018"}
                    {:week (:week w) :count (:2019 w) :year "2019"}
-                   {:week (:week w) :count (:2020 w) :year "2020"}
-                   {:week (:week w) :count (:2020-adip w) :year "2020-adip"}
                    {:week (:week w) :year "Promedio" :count  avg}
-                   {:week (:week w) :area (:2020 w) :year "area" :avgy avg}])))
+                   {:week (:week w) :area (:2020 w) :year "area" :avgy avg}
+                   #_{:week (+ (:week w) 53) :area (:2020 w) :year "area" :avgy avg}
+                   {:week (+ (:week w) 53) :count (:2016 w) :year "2016"}
+                   {:week (+ (:week w) 53) :count (:2017 w) :year "2017"}
+                   {:week (+ (:week w) 53) :count (:2018 w) :year "2018"}
+                   {:week (+ (:week w) 53) :count (:2019 w) :year "2019"}
+                   {:week (+ (:week w) 53) :year "Promedio" :count  avg}
+                   {:week (+ (:week w) 53) :area (:2021 w) :year "area" :avgy avg}
+                   {:week (:week w) :count (:2020 w) :year "2020"}
+                   {:week (+ (:week w) 53) :count (:2021 w) :year "2020"}
+                   {:week (:week w) :count (:2020-adip w) :year "2020-adip"}])))
          (apply concat)
          #_(filter #(or (not= (:year %) "2019")
                       (and (>= (:week %) 10) (<= (:week %) 38))))
-         (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
-                            (>= (:week %) (+ current-week 1)))))
-         (filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
+         #_(filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
+                            (>= (:week %) (+ current-week 0)))))
+         #_(filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
-         (filter #(<= (:week %) 53))
+         (filter #(<= (:week %) 57))
          doall))
 
 
@@ -467,53 +486,60 @@
      50 "13 diciembre"
      51 "20 diciembre"
      52 "27 diciembre"
-     53 "3 enero"})
+     53 "3 enero"
+     54 "10 enero"
+     55 "17 enero"
+     56 "24 enero"
+     57 "31 enero"})
 
 
 
   (def weekly-dates
-    [
-     "03/29/2020" #_13
-     "04/05/2020" #_14
-     "04/12/2020" #_15
-     "04/19/2020" #_16
-     "04/26/2020" #_17
-     "05/03/2020" #_18
-     "05/10/2020" #_19
-     "05/17/2020" #_20
-     "05/24/2020" #_21
-     "05/31/2020" #_22
-     "06/07/2020" #_23
-     "06/14/2020" #_24
-     "06/21/2020" #_25
-     "06/28/2020" #_26
-     "07/05/2020" #_27
-     "07/12/2020" #_28
-     "07/19/2020" #_29
-     "07/26/2020" #_30
-     "08/02/2020" #_31
-     "08/09/2020" #_32
-     "08/16/2020" #_33
-     "08/23/2020" #_34
-     "08/30/2020" #_35
-     "09/06/2020" #_36
-     "09/13/2020" #_37
-     "09/20/2020" #_38
-     "09/27/2020" #_39
-     "10/04/2020" #_40
-     "10/11/2020" #_41
-     "10/18/2020" #_42
-     "10/25/2020" #_43
-     "11/01/2020" #_44
-     "11/08/2020" #_45
-     "11/15/2020" #_46
-     "11/22/2020" #_47
-     "11/29/2020" #_48
-     "12/06/2020" #_49
-     "12/13/2020" #_50
-     "12/20/2020" #_51
-     "12/27/2020" #_52
-     "01/03/2021" #_53])
+    ["03/29/2020"
+     "04/05/2020"
+     "04/12/2020"
+     "04/19/2020"
+     "04/26/2020"
+     "05/03/2020"
+     "05/10/2020"
+     "05/17/2020"
+     "05/24/2020"
+     "05/31/2020"
+     "06/07/2020"
+     "06/14/2020"
+     "06/21/2020"
+     "06/28/2020"
+     "07/05/2020"
+     "07/12/2020"
+     "07/19/2020"
+     "07/26/2020"
+     "08/02/2020"
+     "08/09/2020"
+     "08/16/2020"
+     "08/23/2020"
+     "08/30/2020"
+     "09/06/2020"
+     "09/13/2020"
+     "09/20/2020"
+     "09/27/2020"
+     "10/04/2020"
+     "10/11/2020"
+     "10/18/2020"
+     "10/25/2020"
+     "11/01/2020"
+     "11/08/2020"
+     "11/15/2020"
+     "11/22/2020"
+     "11/29/2020"
+     "12/06/2020"
+     "12/13/2020"
+     "12/20/2020"
+     "12/27/2020"
+     "01/03/2021"
+     "01/10/2021"
+     "01/17/2021"
+     "01/24/2021"
+     "01/31/2021"])
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -540,7 +566,7 @@
     (map (fn [week count]
            {:week week :count count :year "Decesos confirmados"})
          #_(vals weekly-dates)
-         (range 13 54)
+         (range 13 (+ current-week 1))
          (concat [0] cdmx-confirmed-weekly-deaths)))
 
 
@@ -550,7 +576,9 @@
             :count (- (:count week2020) (:count weekavg))
             :week-title
             (str "Semana "
-                 (:week week2020)
+                 (if (< (:week week2020) 54)
+                   (:week week2020)
+                   (- (:week week2020) 53))
                  " ("
                  (get weekly-titles (:week week2020))
                  ")")
@@ -569,16 +597,19 @@
                           (>= (:week %) 10)) weekly-chart-data)))
 
   (def weekly-xss-pct
-    (map (fn [xss base]
-           (into xss {:pct (- (/ (:count xss) (:count base)) 0)
-                      :week-title
-                      (str "Semana "
-                           (:week xss)
-                           " ("
-                           (get weekly-titles (:week xss))
-                           ")")}))
-         (filter #(>= (:week %) 10) weekly-xss)
-         weekly-avg))
+    (sort-by :week
+             (map (fn [xss base]
+                    (into xss {:pct (- (/ (:count xss) (:count base)) 0)
+                               :week-title
+                               (str "Semana "
+                                    (if (< (:week xss) 54)
+                                      (:week xss)
+                                      (- (:week xss) 53))
+                                    " ("
+                                    (get weekly-titles (:week xss))
+                                    ")")}))
+                  (filter #(>= (:week %) 10) weekly-xss)
+                  weekly-avg)))
 
   ;; chart 3
     (oz/view!
@@ -587,7 +618,7 @@
 
   ;; net bar chart (unpublished)
     (oz/view!
-     (viz/grouped-bar-chart-diff weekly-xss :week-title :count :year))
+     (viz/grouped-bar-chart-diff (sort-by :week weekly-xss) :week-title :count :year))
 
 
 
@@ -600,11 +631,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on jan 20
-  ;; with fecha_def at or before jan 3
+  ;; from db published on feb 2
+  ;; with fecha_def at or before jan 31
   (def total-items
-    (let [confirmed (- 23198 15) ;; 15 confirmed before week 12
-          suspects 5662]
+    (let [confirmed (- 29161 15) ;; 15 confirmed before week 12
+          suspects 6048]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -729,15 +760,19 @@
                       (year-avg [(:2016 w)
                                  (:2017 w)
                                  (:2018 w)
-                                 (:2019 w)
-                                 #_(if (and (>= (:week w) 10)
-                                          (<= (:week w) 38))
-                                             (:2019 w))])]
+                                 (:2019 w)])]
                   [{:week (:week w) :count (:2020 w) :series "2020"
                     :region "CDMX"}
                    {:week (:week w) :series "expected" :count  avg
                     :region "CDMX"}
                    {:week (:week w) :area (:2020 w)  :series "area" :avgy avg
+                    :region "CDMX"}
+                   ;;;;;
+                   {:week (+ (:week w) 53) :count (:2021 w) :series "2020"
+                    :region "CDMX"}
+                   {:week (+ (:week w) 53) :series "expected" :count  avg
+                    :region "CDMX"}
+                   {:week (+ (:week w) 53) :area (:2021 w)  :series "area" :avgy avg
                     :region "CDMX"}])))
          (apply concat)
 
@@ -771,7 +806,7 @@
 
   (def lima-gov
     (->>
-     (slurp "resources/peru.csv")
+     (slurp "resources/perunew.csv")
      (csv/read-csv)
      (filter #(= (first %) "LIMA"))
      (map (fn [r] {:region (first r)
@@ -779,9 +814,25 @@
                    :count-expected (edn/read-string (nth r 2))
                    :count-2020 (edn/read-string (nth r 3))}))
      (drop-while #(> (:week %) 14))
-     (take-while #(<= (:week %) 38))
+     (take-while #(<= (:week %) 57))
      (map (fn [r] (make-week-map
                    "Lima" (:week r) "na" (:count-2020 r) (:count-expected r))))
+     (apply concat)))
+
+
+  (def london-gov
+    (->>
+     (slurp "resources/london.csv")
+     (csv/read-csv)
+     rest
+     (map (fn [r] {:region "London"
+                   :week (edn/read-string (first r))
+                   :count-expected (edn/read-string (nth r 7))
+                   :count-2020 (edn/read-string (nth r 8))}))
+     (drop-while #(< (:week %) 1))
+     #_(take-while #(<= (:week %) 56))
+     (map (fn [r] (make-week-map
+                   "London" (:week r) "na" (:count-2020 r) (:count-expected r))))
      (apply concat)))
 
 
@@ -814,12 +865,19 @@
      (map (fn [r]
             {:region "Metropolitana de Santiago"
              :week (edn/read-string (:week r))
+             :year (edn/read-string (:year r))
              :count-expected (edn/read-string (:expected_deaths r))
              :count-2020 (edn/read-string (:total_deaths r))}))
-     (drop-while #(> (:week %) 18))
-     (take-while #(<= (:week %) 38))
+     (drop-while #(< (:week %) 18))
+     #_(take-while #(<= (:week %) 5))
      (map (fn [r] (make-week-map
-                   "Metropolitana de Santiago" (:week r) "na" (:count-2020 r) (:count-expected r))))
+                   "Metropolitana de Santiago"
+                   (if (= (:year r) 2020)
+                     (:week r)
+                     (+ (:week r) 53))
+                     "na"
+                     (:count-2020 r)
+                     (:count-expected r))))
      (apply concat)))
 
 
@@ -829,12 +887,13 @@
   (oz/view! (viz/multi-weekly-line-plot
              (concat (ft-region-data ft-data "New York City")
                      (ft-region-data ft-data "Guayas")
-                     (ft-region-data ft-data "London")
+                     #_(ft-region-data ft-data "London")
+                     london-gov
                      (ft-region-data ft-data "Ile-de-France")
                      (ft-region-data ft-data "Metropolitana de Santiago")
                      #_santiago-economist
-                     (ft-region-data ft-data "Lima")
-                     #_lima-gov
+                     #_(ft-region-data ft-data "Lima")
+                     lima-gov
                      (ft-region-data ft-data "Lombardia region")
                      #_lombardia-gov
                      (ft-region-data ft-data "Madrid")
@@ -843,7 +902,7 @@
 
 
   (def populations-regions
-    {"CDMX" 8918653
+    {"CDMX" 9209944
      "Guayas" 4327800
      "Lombardia region" 9911665
      "London" 8908081 ;; 2018 wikipedia
@@ -957,7 +1016,7 @@
       (xss-deaths (ft-region-data ft-data "Lombardia region") 9 44)
       {:region "Lombardía"})
      (into
-      (xss-deaths (ft-region-data ft-data "London") 12 50)
+      (xss-deaths london-gov #_(ft-region-data ft-data "London") 12 56)
       {:region "Londres"})
      (xss-deaths (ft-region-data ft-data "Madrid") 11 48)
      (into (xss-deaths (ft-region-data ft-data "New York City") 11 48)
@@ -965,8 +1024,8 @@
      (xss-deaths
       (ft-region-data ft-data "Metropolitana de Santiago") 18 50)
      (xss-deaths
-      #_lima-gov
-      (ft-region-data ft-data "Lima") 14 50)
+      (filter :count lima-gov)
+      #_(ft-region-data ft-data "Lima") 14 57)
      (into (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 48)
            {:region "Ile-de-France (región de París)"})])
 

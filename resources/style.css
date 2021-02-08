@@ -127,14 +127,17 @@ table tr {
 
 
 table.cities-xss {
-    width: 650px;
+    width: 850px;
 }
 table.cities-xss tbody tr td  { border:none;
                               font-size:12px;
-                              border-bottom: 1px solid #202020;}
+                              border-bottom: 1px solid #202020;
+                              padding-left:10px;
+                              }
 table.cities-xss thead tr th  {text-align:right;
                              font-size:12px;}
-table.cities-xss tbody tr th  {text-align:right;}
+table.cities-xss tbody tr  {text-align:right;
+                               line-height: 10px;}
 
 table.cities-xss tbody tr td:first-child {
     #font-family: Verdana, Geneva, sans-serif;
@@ -142,10 +145,27 @@ table.cities-xss tbody tr td:first-child {
     border: none;
     padding-left: 4px;
     text-align:left;
-    width: 200px;
+    width: 175px;
+    line-height: 10px;
+    overflow: hidden;
     ;;font-weight:bold;
     #background-color:none;
     border-bottom: 1px solid #202020;
+}
+table.cities-xss tbody tr td:last-child {
+
+}
+
+table.cities-xss thead tr th:last-child {
+    padding-right:66px;
+}
+
+
+
+table.cities-xss tbody tr {
+    line-height:6px;
+    overflow: hidden;
+
 }
 
 table.cities-xss tbody:nth-child(2) {
@@ -153,6 +173,9 @@ table.cities-xss tbody:nth-child(2) {
     background-color:pink;
     
 }
+
+
+
 
 
 

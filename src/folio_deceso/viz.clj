@@ -35,6 +35,38 @@
             :background "white" #_"#fcf8e8"}})
 
 
+(defn chart1-new-line-plot
+  [data-points x-key y-key z-key]
+  {:data {:values data-points}
+   :width 900
+   :height 300
+   :encoding {:x {:field x-key
+                  :type "temporal"
+                  :scale {:domain ["Jan/10/2016", "Jan/31/2021"]
+                          :nice false
+                          :clamp true}
+
+                  :axis {:format "%Y"
+                         :tickBand "center"
+                         :tickCount 5
+                         ;;:tickExtra true
+                         ;;:values ["Jan/16" "Jan/17" "Jan/18" "Jan/19" "Jan/20" "Jan/21"]
+                         :labelFlush "0"}
+                  :title nil}
+              :y {:field y-key :type "quantitative"
+                  :title nil
+                  :scale {:domain [0, 8000]}
+                  :axis {}}
+              :strokeDash {:field :predicted :type "nominal" :title nil
+                           :legend nil}
+              }
+   :mark {:type "line" :point false :color "crimson"}
+   :config {:axis {:grid true
+                   :gridOpacity 0.5}
+            ;;:backgrounr "white"
+            :background "white" #_"#fcf8e8"}})
+
+
 
 
 
@@ -105,6 +137,10 @@
                          "May/31/2020"]}
               :y {:field y-key :type "quantitative"
                   :title nil
+                  :scale {:domain [-500 , 6500]
+                          :nice false
+                          :clamp true}
+                          
                   :axis {:tickCount 10
                          :labelFontSize 15}}
               :text {:field y-key :type "quantitative" :format ",.0f"}
@@ -151,7 +187,14 @@
                          :labelFontSize 15}
                   :title ""}
               :text {:field y-key :type "quantitative"
-                     :format ".0%"}
+                     :format ".0%"
+                     :align "center"
+                     :baseline "top"
+                     :angle 270
+                     :dy -5
+                     :dx 32
+                     :fontWeight "bold"
+                     :color "black"}
               :column {:field z-key :type "ordinal" :spacing 10
                        :label nil
                        :labels nil
@@ -160,10 +203,12 @@
    :layer [{:mark {:type "bar"
                    :color "crimson"}}
            {:mark {:type "text"
-                   :fontSize 12
+                   :fontSize 14
                    :align "center"
                    :baseline "bottom"
-                   :dy -15
+                   :angle 270
+                   :dy 5
+                   :dx 26
                    :color "black"
                    :fontWeight "bold"}}]
    :config {:views {:stroke "transparent"}
@@ -183,6 +228,9 @@
               :y {:field x-key :type "nominal" :title nil
                   :axis {:labelFontSize 14}}
               :x {:field y-key :type "quantitative" :title ""
+                  :scale {:domain [0, 85000]
+                          :nice false}
+
                   :axis {:labelFontSize 15 :tickCount 5}}}
    :layer [{:mark {:type "bar" :color "#ff4d4d"}}
            {:mark {:type "text"
@@ -211,6 +259,7 @@
                    :size 60}
             :encoding {:x {:field x-key
                            :type "temporal"
+                            
                            :axis {:format " %d/%b "
                                   :tickBand "extent"
                                   :tickCount 7
@@ -287,6 +336,43 @@
             :encoding {:text {:field "proportion", :type "quantitative"}
                        :color {:value "#222222"}}}]})
 
+(defn single-bar-max
+  [d]
+  {:data {:values d}
+   :width 175
+   :height 10
+   :config {:axis {:grid false
+                   :gridColor "green"
+                   :domainWidth 1}
+            ;; :bacground "#fcf8e8"
+            :view {:stroke "transparent"
+                   :strokeWidth 0}
+            :background (if (= (:place d) "CDMX") "pink" "white")
+            :style {:cell {:stroke "transparent"
+                           :strokeWidth 0}}}
+   :layer [{:mark {:type "bar" :height 10 :color "crimson"
+                   :stroke "transparent"
+                   :strokeWidth 0}
+            :encoding {:x {:field "proportion"
+                           :type "quantitative"
+                           :scale {:domain [0, 100]}
+                           :axis {:title nil
+                                  :maxExtent 0
+                                  :grid false
+                                  :disable true
+                                  :domain false
+                                  :ticks false
+                                  :tickColor "red"
+                                  :tickCount 0}}}}
+           {:mark {:type "text"
+                   :fontSize 12
+                   :dx -110 :dy 0
+                   :lineHeight 4
+                   :baseline "middle"
+                   :fontWeight "normal"}
+            :encoding {:text {:field "absolute", :type "nominal"}
+                       :color {:value "#222222"}}}]})
+
 
 (defn covid-xss-table
   [places]
@@ -312,9 +398,8 @@
                 [:td [:vega-lite
                       (single-bar-percent
                        {:place (:country p)
-                        :proportion
-                        (int (* 100.0 (/ (:confirmed-deaths p)
-                                         (:xss-net p))))})]]]])
+                        :proportion (int (* 100.0 (/ (:confirmed-deaths p)
+                                                     (:xss-net p))))})]]]])
             places)]]]))
 
 
@@ -323,7 +408,8 @@
   [places]
   (let [headers ["" "Exceso de mortalidad" "Exceso de mortalidad (%)"
                  "Semana inicial" "Semana final"
-                 "Población" "Exceso de mortalidad/población millones"]]
+                 "Población" "Exceso de mortalidad / población millones"]
+        max-xss (:xss-pop (first places))]
     [:html
      [:head
       [:style (slurp "resources/style.css")]]
@@ -337,10 +423,18 @@
                       [:td (:region p)]
                       [:td (format "%,.0f" (float (:xss-net p)))]
                       [:td (format "%,.0f%%" (:xss-pct p))]
-                      [:td (:start-week p)]
-                      [:td (:end-week p)]
+                      [:td (str (:start-week p) "/20")]
+                      [:td (if (< (:end-week p) 54)
+                             (str (:end-week p) "/20")
+                             (str (- (:end-week p) 53) "/21"))]
                       [:td (format "%,d" (:population p))]
-                      [:td (format "%,.0f" (:xss-pop p))]]])
+                      [:td [:vega-lite
+                            (single-bar-max
+                             {:place (:region p)
+                              :absolute (format "%,.0f" (:xss-pop p))
+                              :proportion (int (* 100.0 (/ (:xss-pop p)
+                                                           max-xss)))})]]
+                      #_[:td (format "%,.0f" (:xss-pop p))]]])
             places)]]]))
 
 
@@ -384,17 +478,26 @@
             :encoding {:x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [10 , 53]
+                           :scale {:domain [10 , 57]
                                    :nice false
+                                   :clamp true
                                    ;;:range [10, 52]
                                    :tickMinStep 1}
                            :axis {;;:tickBand "extent"
+                                  :labelExpr "if(datum.value<54, datum.label+' / 2020', datum.value-53+' / 2021')"
                                   :grid false
+                                  ;;:align "center"
+                                  ;;:baseline "top"
+                                  :labelAngle 270
+                                  ;;:dy -5
+                                  ;;:dx 32
+
                                   :tickCount 42}}
                        :y {:field y-key
                            :axis {:grid true}
                            :type "quantitative"
-                           :scale {:domain [1000,6000]}
+                           :scale {:domain [1000,7500]
+                                   :nice false}
                            :title "Decesos semanales"}
                        :color
                        {:field z-key
@@ -430,7 +533,8 @@
                        :y {:field :area
                            :axis {:grid true}
                            :type "quantitative"
-                           :scale {:domain [1000,4500]}
+                           :scale {:domain [1000,7500]
+                                   :nice false}
                            :aggregate "max"}
                        :y2 {:field :avgy
                             :aggregate "min"
@@ -500,18 +604,20 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 53]
+                           :scale {:domain [12, 57]
                                    :nice false
                                    :clamp true}
                            :axis {;;:tickBand "extent"
+                                  :labelExpr "if(datum.value<54, datum.label+' / 2020', datum.value-53+' / 2021')"
+                                  :labelAngle 270
                                   :grid false
                                   :domain true
-                                  :tickCount 15}}
+                                  :tickCount 40}}
                        :y {:field y-key
                            :axis {:grid true}
                            :sort ["Decesos confirmados" "Excedente 2020"]
                            :type "quantitative"
-                           :scale {:domain [0,4500]}
+                           :scale {:domain [0,6000]}
                            :title "Decesos semanales"}
                        :color {:field z-key
                                :type "nominal"
@@ -594,6 +700,9 @@
                                           ;;:range [10, 52]
                                           :tickMinStep 1}
                                   :axis {;;:tickBand "extent"
+                                         :labelExpr "if(datum.value<54, datum.label+' / 2020', datum.value-53+' / 2021')"
+                                         :labelAngle 270
+
                                          :grid true
                                          :tickCount 14}}
                               :y {:field y-key
