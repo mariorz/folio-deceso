@@ -8,7 +8,7 @@
    :height 400
    :encoding {:x {:field x-key
                   :type "temporal"
-                  :scale {:domain ["Jan/01/2020", "Jan/10/2021"]
+                  :scale {:domain ["Jan/01/2020", "Feb/14/2021"]
                           :nice false
                           :clamp true}
 
@@ -42,7 +42,7 @@
    :height 300
    :encoding {:x {:field x-key
                   :type "temporal"
-                  :scale {:domain ["Jan/10/2016", "Jan/31/2021"]
+                  :scale {:domain ["Jan/10/2016", "Feb/14/2021"]
                           :nice false
                           :clamp true}
 
@@ -228,7 +228,7 @@
               :y {:field x-key :type "nominal" :title nil
                   :axis {:labelFontSize 14}}
               :x {:field y-key :type "quantitative" :title ""
-                  :scale {:domain [0, 85000]
+                  :scale {:domain [0, 90000]
                           :nice false}
 
                   :axis {:labelFontSize 15 :tickCount 5}}}
@@ -478,7 +478,7 @@
             :encoding {:x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [10 , 57]
+                           :scale {:domain [10 , 59]
                                    :nice false
                                    :clamp true
                                    ;;:range [10, 52]
@@ -604,7 +604,7 @@
                        :x {:field x-key
                            :title "Semanas"
                            :type "quantitative"
-                           :scale {:domain [12, 57]
+                           :scale {:domain [12, 59]
                                    :nice false
                                    :clamp true}
                            :axis {;;:tickBand "extent"

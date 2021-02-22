@@ -1,5 +1,6 @@
 (ns folio-deceso.core
   (:require [clj-time.format :as f]
+            [clj-time.core :as t]
             [clojure.data.csv :as csv]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
@@ -37,7 +38,7 @@
 
 (comment
   (oz/start-server! 8888)
-  (def current-week 57)
+  (def current-week 59)
 
   (def cy2020c (edn/read-string (slurp "resources/cy2020.edn")))
   (def cy2019c (edn/read-string (slurp "resources/cy2019.edn")))
@@ -317,7 +318,9 @@
     ["January/10/2021"
      "January/17/2021"
      "January/24/2021"
-     "January/31/2021"])
+     "January/31/2021"
+     "February/7/2021"
+     "February/14/2021"])
 
 
 
@@ -422,7 +425,7 @@
          #_(filter #(not (and (or (= (:year %) "2020") (= (:year %) "area"))
                             (<= (:week %) 9))))
          (filter #(>= (:week %) 10))
-         (filter #(<= (:week %) 57))
+         (filter #(<= (:week %) current-week))
          doall))
 
 
@@ -490,7 +493,9 @@
      54 "10 enero"
      55 "17 enero"
      56 "24 enero"
-     57 "31 enero"})
+     57 "31 enero"
+     58 "7 febrero"
+     59 "14 febrero"})
 
 
 
@@ -539,7 +544,9 @@
      "01/10/2021"
      "01/17/2021"
      "01/24/2021"
-     "01/31/2021"])
+     "01/31/2021"
+     "02/07/2021"
+     "02/14/2021"])
 
   (def cdmx-confirmed-deaths
     (->> (slurp (str
@@ -631,11 +638,11 @@
 
 
   ;; values for confirmados and sospechosos
-  ;; from db published on feb 2
-  ;; with fecha_def at or before jan 31
+  ;; from db published on feb 18
+  ;; with fecha_def at or before feb 14
   (def total-items
-    (let [confirmed (- 29161 15) ;; 15 confirmed before week 12
-          suspects 6048]
+    (let [confirmed (- 33122 15) ;; 15 confirmed before week 12
+          suspects 6133]
       [{:count  (Math/round (- deaths-week-2020 deaths-week-avg))
         :cat "Exceso de Mortalidad"}
        {:count confirmed :cat "Confirmados"}
@@ -814,7 +821,7 @@
                    :count-expected (edn/read-string (nth r 2))
                    :count-2020 (edn/read-string (nth r 3))}))
      (drop-while #(> (:week %) 14))
-     (take-while #(<= (:week %) 57))
+     (take-while #(<= (:week %) 59))
      (map (fn [r] (make-week-map
                    "Lima" (:week r) "na" (:count-2020 r) (:count-expected r))))
      (apply concat)))
@@ -1016,7 +1023,7 @@
       (xss-deaths (ft-region-data ft-data "Lombardia region") 9 44)
       {:region "Lombardía"})
      (into
-      (xss-deaths london-gov #_(ft-region-data ft-data "London") 12 56)
+      (xss-deaths london-gov #_(ft-region-data ft-data "London") 12 58)
       {:region "Londres"})
      (xss-deaths (ft-region-data ft-data "Madrid") 11 48)
      (into (xss-deaths (ft-region-data ft-data "New York City") 11 48)
@@ -1025,7 +1032,7 @@
       (ft-region-data ft-data "Metropolitana de Santiago") 18 50)
      (xss-deaths
       (filter :count lima-gov)
-      #_(ft-region-data ft-data "Lima") 14 57)
+      #_(ft-region-data ft-data "Lima") 14 59)
      (into (xss-deaths (ft-region-data ft-data "Ile-de-France") 12 48)
            {:region "Ile-de-France (región de París)"})])
 
@@ -1138,7 +1145,7 @@
   (defn parse-adip-date
     [s]
     (try
-      (f/parse (f/formatter "yyyy-MM-dd") s)
+      (f/parse (f/formatter-local "yyyy-MM-dd") s)
       (catch Exception e (println "error:" s))))
 
 
@@ -1175,27 +1182,31 @@
 
   (defn get-monthday
     [dp]
-    (let [date (:fecha_defuncion dp)
+    (let [date (:fec_defuncion dp)
           month (+ (get-month date) 1)
           day (get-day date)
           year (get-year date)]
       (str month "/" day "/" year)))
 
   (def adip-data
-    (with-open [in-file (io/reader "resources/data-adip-ene16.csv")]
+    (with-open [in-file (io/reader "resources/adip31jan.csv")]
       (->> (csv/read-csv in-file)
            (sc/remove-comments)
+           ;;(take 10)
            (sc/mappify)
-           (sc/cast-with {:ID parse-int
+           (sc/cast-with {;;:ID parse-int
                           :edad parse-int
-                          :fecha_defuncion parse-adip-date})
-           (filter #(= (type (:fecha_defuncion %)) org.joda.time.DateTime))
-           (map #(into % {:week (week-of-year (:fecha_defuncion %))}))
+                          :fec_defuncion parse-adip-date
+                          :causa identity
+                          :LugarMuerte identity
+                          })
+           (filter #(= (type (:fec_defuncion %)) org.joda.time.DateTime))
+           (map #(into % {:week (week-of-year (:fec_defuncion %))}))
            (doall))))
 
   (def adip-data-2020
     (->> adip-data
-         (filter #(= (get-year (:fecha_defuncion %)) 2020))))
+         (filter #(= (get-year (:fec_defuncion %)) 2020))))
 
   (def adip-data-112020
     (->> adip-data
@@ -1209,9 +1220,25 @@
 
   (def adip-data-pre2020-dec
     (->> adip-data
-         (filter #(and (not= (get-year (:fecha_defuncion %)) 2020)
+         (filter #(and (not= (get-year (:fecha_defun %)) 2020)
                        (= (get-month (:fecha_defuncion %)) 11)
-                       (<= (get-day (:fecha_defuncion %)) 10)))))
+                       (<= (get-day (:fecha_defuncion %)) 11)))))
+
+  (def adip-data-post2020-dec12
+    (->> adip-data
+         (filter #(or
+                   (= (get-year (:fec_defuncion %)) 2021)
+                   (and (= (get-year (:fec_defuncion %)) 2020)
+                        (= (get-month (:fec_defuncion %)) 11)
+                        (> (get-day (:fec_defuncion %)) 12))))))
+
+  (def adip-data-pre2020-dec12
+    (->> adip-data
+         (filter #(or (and (= (get-year (:fec_defuncion %)) 2020)
+                           (= (get-month (:fec_defuncion %)) 11)
+                           (<= (get-day (:fec_defuncion %)) 12))
+                      (and (= (get-year (:fec_defuncion %)) 2020)
+                           (<= (get-month (:fec_defuncion %)) 10))))))
 
 
 
