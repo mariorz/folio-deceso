@@ -1,6 +1,6 @@
 # folio-deceso
 
-This repository contains code and data used to measure excess mortality in Mexico City in the context of the COVID-19 epidemic. This information was published as a series of articles in the magazine [Nexos](https://nexos.com.mx). 
+This repository contains code and data used to measure excess mortality in Mexico City in the context of the COVID-19 epidemic. This information was published as a series of articles in the magazine [Nexos](https://nexos.com.mx)
 
 Different commits correspond to the different articles as follows:
 - [¿Qué nos dicen las actas de defunción de la CDMX?](https://datos.nexos.com.mx/?p=1388) published on May 26, 2020 -> [commit](https://github.com/mariorz/folio-deceso/tree/dfa238c1df8a8763d265f419e5a659555031036a)
